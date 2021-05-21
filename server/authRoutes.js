@@ -97,7 +97,7 @@ exports.authRoutes = async function authRoutes(fastify, options) {
       write(filename, { ...auth, authSeq });
     } else {
       console.log("removing", filename);
-      remove(filename);
+      filename && remove(filename);
     }
 
     response.send(ret);
