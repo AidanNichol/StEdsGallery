@@ -23,7 +23,7 @@
       "request": "launch",
       "name": "server",
       "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}/server/loader.js",
+      "program": "${workspaceFolder}/server/index.js",
       "cwd": "${workspaceFolder}/server",
       "envFile": "${workspaceFolder}/server/.env"
     }

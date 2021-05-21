@@ -96,6 +96,7 @@ exports.authRoutes = async function authRoutes(fastify, options) {
       delete auth.error;
       write(filename, { ...auth, authSeq });
     } else {
+      console.log("removing", filename);
       remove(filename);
     }
 
