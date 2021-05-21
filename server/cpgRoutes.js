@@ -1,72 +1,74 @@
-const db = require('./db.js');
-const sequelize = require('sequelize');
+const db = require("./db.js");
+const sequelize = require("sequelize");
 
-const fs = require('fs');
-const util = require('util');
-const path = require('path');
-const Jimp = require('jimp');
-const { add_picture } = require('./picmgmt.inc.js');
-const { isOkForRole } = require('./authRoutes.js');
+const fs = require("fs");
+const util = require("util");
+const path = require("path");
+const Jimp = require("jimp");
+const { add_picture } = require("./picmgmt.inc.js");
+const { isOkForRole } = require("./authRoutes.js");
 
-const dateFn = require('date-fns');
-const jetpack = require('fs-jetpack');
+const dateFn = require("date-fns");
+const jetpack = require("fs-jetpack");
 const { read, exists, write, cwd } = jetpack;
 const { format } = dateFn;
 const { Op } = sequelize;
 
 const isDev = (dev = true) => dev;
-const WALKDATA = isDev() ? '/Users/aidan/Websites/htdocsC' : '/home/ajnichol/public_html';
+const WALKDATA = isDev()
+  ? "/Users/aidan/Websites/htdocsC"
+  : "/home/ajnichol/public_html";
 
 async function cpgRoutes(fastify, options) {
-  fastify.get('/', async (request, reply) => {
-    return { hello: 'world' };
+  fastify.get("/", async (request, reply) => {
+    return { hello: "world" };
   });
 
-  fastify.get('/getPictures', async (request) => {
-    // const [results, metadata] = await models.sequelize.query(
-    //   "SELECT name FROM sqlite_master WHERE type ='table' AND name NOT LIKE 'sqlite_%';"
-    // );
-    // console.log("getPictures ", results, metadata);
+  fastify.get("/getPictures", async (request) => {
+    const [results, metadata] = await db.sequelize.query(
+      "SELECT name FROM sqlite_master WHERE type ='table' AND name NOT LIKE 'sqlite_%';"
+    );
+    console.log("getPictures ", results, metadata);
     const pictures = await db.picture.findAll({
-      order: [['aid', 'DESC']],
+      order: [["aid", "DESC"]],
       limit: 30,
       // where: { album: { title: { startsWith: "20" } } },
 
-      include: { model: db.album, attributes: ['title', 'directory'] },
+      include: { model: db.album, attributes: ["title", "directory"] },
     });
     // console.log("getPictures pictures", pictures);
     return pictures;
   });
 
-  fastify.get('/getYears', async (request) => {
+  fastify.get("/getYears", async (request) => {
     const aggregations = await db.album.findAll({
-      group: 'year',
-      attributes: ['year', [sequelize.fn('COUNT', 'year'), 'count']],
+      group: "year",
+      attributes: ["year", [sequelize.fn("COUNT", "year"), "count"]],
       count: {
         year: true,
       },
       orderBy: {
-        year: 'DESC',
+        year: "DESC",
       },
     });
     return aggregations;
   });
 
-  fastify.get('/getAlbumList/:year', async (request) => {
+  fastify.get("/getAlbumList/:year", async (request) => {
     const { year } = request.params;
     const aggregations = await db.album.findAll({
-      attributes: ['aid', 'title', 'pic_count'],
+      attributes: ["aid", "title", "pic_count"],
       include: {
         model: db.picture,
-        attributes: [[sequelize.fn('COUNT', sequelize.col('pid')), 'count']],
+        attributes: [[sequelize.fn("COUNT", sequelize.col("pid")), "count"]],
       },
       where: { year: year },
-      order: [['title', 'DESC']],
+      order: [["title", "DESC"]],
     });
     return aggregations;
   });
 
-  fastify.get('/getAlbum/:aid', async (request) => {
+  fastify.get("/getAlbum/:aid", async (request) => {
     const { aid } = request.params;
 
     const album = db.album.findByPk(parseInt(aid), {
@@ -76,21 +78,21 @@ async function cpgRoutes(fastify, options) {
     return album;
   });
 
-  fastify.get('/getLatestAlbums', async () => {
+  fastify.get("/getLatestAlbums", async () => {
     const albums = await db.album.findAll({
-      attributes: ['aid', 'title'],
-      order: [['title', 'DESC']],
+      attributes: ["aid", "title"],
+      order: [["title", "DESC"]],
       limit: 25,
     });
     return albums;
   });
 
-  fastify.post('/upload', async (req) => {
+  fastify.post("/upload", async (req) => {
     try {
       const authSeq = req.cookies.authSeq;
-      console.log('authSeq', req.cookies);
-      if (!isOkForRole(req, 'uploader')) {
-        throw Error('not authorized for uploading');
+      console.log("authSeq", req.cookies);
+      if (!isOkForRole(req, "uploader")) {
+        throw Error("not authorized for uploading");
       }
       const buff = await req.body.photos[1].toBuffer();
       const filename = await req.body.photos[1].filename;
@@ -119,7 +121,7 @@ async function cpgRoutes(fastify, options) {
       const { pid } = await db.picture.create({
         aid: album.aid,
         origFilename: filename,
-        filename: '',
+        filename: "",
         photographer,
       });
 
@@ -130,7 +132,7 @@ async function cpgRoutes(fastify, options) {
         fastify.log,
         temp,
         newF,
-        directory,
+        directory
       );
       const update = await db.picture.update({
         where: { pid },
