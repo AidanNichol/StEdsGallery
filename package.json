@@ -9,7 +9,7 @@
     "seedP": "clear&&node prisma/seedP.mjs ",
     "moveFiles": "clear&&node prisma/moveFiles.mjs --trace-warnings ",
     "generate": "npx prisma generate",
-    "server": "clear&&yarn nodemon -r dotenv/config ./index.js"
+    "server": "clear&&yarn nodemon -r dotenv/config ./server/index.js"
   },
   "dependencies": {
     "date-fns": "^2.21.3",
