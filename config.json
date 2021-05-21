@@ -1,0 +1,37 @@
+{
+  "development": {
+    "username": "aidan",
+    "password": null,
+    "dialect": "sqlite",
+    "storage": "./gallery.sqlite",
+    "logging": false,
+    "cert": "localhost.crt",
+    "key": "localhost.key",
+    "wscert": "localwss.crt",
+    "wskey": "localwss.key",
+    "port": "31313",
+    "wss": "42424"
+  },
+  "test": {
+    "username": "root",
+    "password": null,
+    "database": "database_test",
+    "host": "127.0.0.1",
+    "dialect": "mysql",
+    "operatorsAliases": false
+  },
+
+  "production": {
+    "username": "aidan",
+    "password": null,
+    "database": "./database.sqlite",
+    "host": "127.0.0.1",
+    "dialect": "sqlite",
+    "logging": false,
+    "operatorsAliases": false,
+    "cert": "../ssl/keys/aidan_a2hosted_com_ce0a1_47911_1592742217_53bdac56b5123025f5c97673a10ad657.crt",
+    "key": "../ssl/keys/ce0a1_47911_f2534b1dba49d455fc62ea1ba7e57617.key",
+    "port": "31313",
+    "wss": "42424"
+  }
+}
