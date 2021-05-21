@@ -42,10 +42,10 @@ fastify.register(fastifyStatic, {
   root: galleryDataPath,
   prefix: "/galleryData", // optional: default '/'
 });
-// fastify.register(fastifyCors, {
-//   credentials: true,
-//   origin: [/localhost/, /stedwardsfellwalkers\.co\.uk$/],
-// });
+fastify.register(fastifyCors, {
+  credentials: true,
+  origin: [/localhost/, /stedwardsfellwalkers\.co\.uk$/],
+});
 fastify.get("/", async (request, reply) => {
   return { hello: "world" };
 });
