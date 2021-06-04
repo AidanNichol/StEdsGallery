@@ -1,5 +1,6 @@
-const Sequelize = require('sequelize');
-const { DataTypes } = require('sequelize');
+const Sequelize = require("sequelize");
+const { DataTypes } = require("sequelize");
+const getenv = require("getenv");
 
 // const { logKeys } = require('../util/logObj');
 // const { logTrace } = require('../util/logTrace');
@@ -9,20 +10,26 @@ const { DataTypes } = require('sequelize');
 // const config = require("./config.json")[env];
 // config.logging = console.log;
 // const db = {};
+const dbLocation = getenv("DB_LOCATION", ".");
 
-let sequelize = new Sequelize('./gallery.sqlite', 'aidan', null, {
-  dialect: 'sqlite',
-  storage: './gallery.sqlite',
-  logging: false,
-});
+let sequelize = new Sequelize(
+  `${dbLocation}/gallery${dbLocation}sqlite`,
+  "aidan",
+  null,
+  {
+    dialect: "sqlite",
+    storage: `${dbLocation}/gallery.sqlite`,
+    logging: false,
+  }
+);
 
-sequelize.addHook('afterDestroy', (record) => {
+sequelize.addHook("afterDestroy", (record) => {
   // logKeys("destroyed", record);
 });
 
 // db.album = require("./albums.js")(sequelize);
 const album = sequelize.define(
-  'album',
+  "album",
   {
     aid: {
       allowNull: false,
@@ -40,10 +47,10 @@ const album = sequelize.define(
   },
   {
     timestamps: false,
-  },
+  }
 );
 const picture = sequelize.define(
-  'picture',
+  "picture",
   {
     pid: {
       allowNull: false,
@@ -66,30 +73,10 @@ const picture = sequelize.define(
   },
   {
     timestamps: false,
-  },
+  }
 );
-// db.picture = require("./pictures.js")(sequelize);
-album.hasMany(picture, { foreignKey: 'aid', sourceKey: 'aid' });
-picture.belongsTo(album, { foreignKey: 'aid' });
 
-// Object.keys(db).forEach((modelName) => {
-//   if (db[modelName].associate) {
-//     db[modelName].associate(db);
-//   }
-// });
-// add scopes
-// require('./scopes/bookingLogScopes')(db);
-// require('./scopes/bookingScopes')(db);
-// require('./scopes/walkScopes')(db);
-// require('./scopes/paymentScopes')(db);
-// require('./scopes/refundScopes')(db);
-// require('./scopes/accountScopes')(db);
-// require('./scopes/memberScopes')(db);
-// require('./scopes/allocationScopes')(db);
-// require('./scopes/bankingScopes')(db);
-// db.album = album;
-// db.picture = picture;
-// db.sequelize = sequelize;
-// db.Sequelize = Sequelize;
+album.hasMany(picture, { foreignKey: "aid", sourceKey: "aid" });
+picture.belongsTo(album, { foreignKey: "aid", sourceId: "aid" });
 
 module.exports = { album, picture, sequelize, Sequelize };

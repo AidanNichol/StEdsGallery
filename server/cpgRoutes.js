@@ -1,5 +1,6 @@
-const db = require("./db.js");
+const db = require("./galleryDB.js");
 const sequelize = require("sequelize");
+const { Op } = require("sequelize");
 
 const fs = require("fs");
 const util = require("util");
@@ -12,7 +13,7 @@ const dateFn = require("date-fns");
 const jetpack = require("fs-jetpack");
 const { read, exists, write, cwd } = jetpack;
 const { format } = dateFn;
-const { Op } = sequelize;
+// const { Op } = sequelize;
 
 const isDev = (dev = true) => dev;
 const WALKDATA = isDev()
@@ -24,6 +25,14 @@ async function cpgRoutes(fastify, options) {
     return { hello: "world" };
   });
 
+  fastify.get("/getTables", async (request) => {
+    const [results, metadata] = await db.sequelize.query(
+      "SELECT name FROM sqlite_master WHERE type ='table' AND name NOT LIKE 'sqlite_%';"
+    );
+    console.log("getPictures ", results, metadata);
+
+    return results;
+  });
   fastify.get("/getPictures", async (request) => {
     const [results, metadata] = await db.sequelize.query(
       "SELECT name FROM sqlite_master WHERE type ='table' AND name NOT LIKE 'sqlite_%';"
@@ -47,9 +56,7 @@ async function cpgRoutes(fastify, options) {
       count: {
         year: true,
       },
-      orderBy: {
-        year: "DESC",
-      },
+      order: [["year", "DESC"]],
     });
     return aggregations;
   });
@@ -57,13 +64,29 @@ async function cpgRoutes(fastify, options) {
   fastify.get("/getAlbumList/:year", async (request) => {
     const { year } = request.params;
     const aggregations = await db.album.findAll({
-      attributes: ["aid", "title", "pic_count"],
+      attributes: [
+        "aid",
+        "title",
+        [sequelize.fn("COUNT", sequelize.col("pictures.aid")), "count"],
+      ],
       include: {
         model: db.picture,
-        attributes: [[sequelize.fn("COUNT", sequelize.col("pid")), "count"]],
+        attributes: [],
       },
+      group: "album.aid",
       where: { year: year },
       order: [["title", "DESC"]],
+      // attributes: ["aid", "title", "pic_count"],
+      // include: {
+      //   model: db.picture,
+      //   attributes: [
+      //     "aid",
+      //     "pid",
+      //     [sequelize.fn("COUNT", sequelize.col("pid")), "count"],
+      //   ],
+      // },
+      // where: { year: year },
+      // order: [["title", "DESC"]],
     });
     return aggregations;
   });
@@ -134,15 +157,15 @@ async function cpgRoutes(fastify, options) {
         newF,
         directory
       );
-      const update = await db.picture.update({
-        where: { pid },
-        data: {
+      const update = await db.picture.update(
+        {
           filename: newF,
           width,
           height,
           srcset,
         },
-      });
+        { where: { pid: pid } }
+      );
       return {};
     } catch (error) {
       console.log(error);
@@ -150,4 +173,4 @@ async function cpgRoutes(fastify, options) {
     }
   });
 }
-module.exports = cpgRoutes;
+module.exports = { cpgRoutes };
