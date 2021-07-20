@@ -10,12 +10,14 @@ const { authRoutes } = require("./authRoutes.js");
 const { walkRoutes } = require("./walkRoutes.js");
 const { eventRoutes } = require("./eventRoutes.js");
 
-const getEnv = require("getenv");
+const dotenv = require("dotenv");
 const path = require("path");
 const jetpack = require("fs-jetpack");
 const getenv = require("getenv");
 const http = require("http");
 const { cwd, read } = jetpack;
+
+dotenv.config();
 const galleryDataPath = process.env.GALLERY_DATA;
 console.log("galleryData", galleryDataPath);
 const fs = require("fs");

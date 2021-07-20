@@ -3,6 +3,9 @@ const db = require("./walkDB");
 const { read, exists } = require("fs-jetpack");
 const Sequelize = require("sequelize");
 const { Op } = require("sequelize");
+const jetpack = require("fs-jetpack");
+const { createMapPdf } = require("./mappdf/createMapPdf");
+const { uploadWalk, updateWalkWithRemoteData } = require("./uploadWalk");
 const { format } = dateFn;
 
 const isDev = (dev = true) => dev;
@@ -13,6 +16,16 @@ async function walkRoutes(fastify, options) {
   fastify.get("/", async (request, reply) => {
     return { hello: "world" };
   });
+
+  fastify.get("/createMapPdf/:walkNo", (request, reply) => {
+    let { walkNo } = request.params;
+    return db.walk
+      .findByPk(walkNo, { include: [db.region] })
+      .then((walkData) => {
+        return createMapPdf(walkNo, walkData);
+      });
+  });
+
   fastify.get("/getYearsData/:year", async (request) => {
     let { year } = request.params;
     const walksDetails = await db.walk.findAll({
@@ -34,10 +47,12 @@ async function walkRoutes(fastify, options) {
 
     return { walksDetails, hiWalk, progPDF, year };
   });
+
   fastify.get("/getWalkData/:walkDate", async (request) => {
     const { walkDate } = request.params;
     return await getNextWalkData(walkDate);
   });
+
   fastify.get("/getLatestYears", async () => {
     // const [results, metadata] = await db.sequelize.query(
     //   "SELECT name FROM sqlite_master WHERE type ='table' AND name NOT LIKE 'sqlite_%';",
@@ -54,6 +69,23 @@ async function walkRoutes(fastify, options) {
     return result;
   });
 
+  fastify.get("/getYears", async () => {
+    const result = await db.walk.findAll({
+      attributes: [[Sequelize.fn("DISTINCT", Sequelize.col("year")), "year"]],
+      order: [["year", "DESC"]],
+    });
+    return result;
+  });
+
+  fastify.get("/getYearsWalks/:year", async (req) => {
+    const { year } = req.params;
+    const result = await db.walk.findAll({
+      where: { year: year },
+      order: [["date", "ASC"]],
+    });
+    return result;
+  });
+
   fastify.get("/getPastWalks", async () => {
     let now = format(new Date(), "yyyy-MM-dd");
     const result = await db.walk.findAll({
@@ -65,16 +97,21 @@ async function walkRoutes(fastify, options) {
     });
     return result;
   });
+
   fastify.get("/getWalkDetails/:dat", async (request) => {
     let { dat } = request.params;
 
-    const details = await getNextWalkData(dat);
+    let details = await getNextWalkData(dat);
     console.log(dat, details);
     let routes = await db.route.findAll({ where: { date: details.date } });
 
     const base = `walkdata/${dat.substr(0, 4)}/${dat}`;
     //dets['img'] = $this->FindImageFile("$base/map-$dat");
-    const img = `${base}/map-${dat}.pdf`;
+    let img = `${base}/map-${dat}.pdf`;
+    if (jetpack.exists(`${WALKDATA}/${img}`) !== "file") {
+      img = `walkdata/mapnotavailable.pdf`;
+    }
+    // details = { ...details, img };
     const imgConsts = { imgWd: 10, imgHt: 10, imgSize: 10 };
     routes = routes.map((rt) => {
       rt = rt.get({ plain: true });
@@ -89,8 +126,30 @@ async function walkRoutes(fastify, options) {
 
     const jFile = `${WALKDATA}/${base}/data-${dat}-walk-gpx.json`;
     let gpxJ = details.details === "Y" ? JSON.parse(read(jFile)) : [];
-    return { details, routes, gpxJ };
+    return { details, routes, gpxJ, img };
   });
+
+  fastify.post("/updateWalkDetails/:walkNo", async (request) => {
+    const { walkNo } = request.params;
+    const body = JSON.parse(request.body);
+    const res = await db.walk.update(body, { where: { date: walkNo } });
+    return { res: "ok" };
+  });
+
+  fastify.get("/uploadWalk/:walkNo", async (request) => {
+    const { walkNo } = request.params;
+    // const body = JSON.parse(request.body);
+
+    return await uploadWalk(walkNo);
+  });
+
+  fastify.post("/updateWalkWithRemoteData/:walkNo", async (request) => {
+    const { walkNo } = request.params;
+    const body = JSON.parse(request.body);
+    const res = await updateWalkWithRemoteData(db, walkNo, body);
+    return { res: "ok" };
+  });
+
   fastify.get("/getRoutesGpxJ/:dat", async (request) => {
     let { dat } = request.params;
     const base = `walkdata/${dat.substr(0, 4)}/${dat}`;

@@ -9,9 +9,11 @@
     "seedP": "clear&&node prisma/seedP.mjs ",
     "moveFiles": "clear&&node prisma/moveFiles.mjs --trace-warnings ",
     "generate": "npx prisma generate",
-    "server": "clear&&yarn nodemon -r dotenv/config ./server/index.js"
+    "server": "clear&&yarn nodemon -r dotenv/config ./server/index.js",
+    "deploy": "clear && yarn version --patch && node -r dotenv/config deploy.mjs"
   },
   "dependencies": {
+    "basic-ftp": "^4.6.6",
     "date-fns": "^2.21.3",
     "dotenv": "^9.0.2",
     "fastify": "^3.15.1",
@@ -24,6 +26,9 @@
     "fs-jetpack": "^4.1.0",
     "getenv": "^1.0.0",
     "jimp": "^0.16.1",
+    "jspdf": "^2.3.1",
+    "lodash": "^4.17.21",
+    "log-update": "^4.0.0",
     "mailgun.js": "^3.3.2",
     "sequelize": "^6.6.2",
     "sqlite3": "^5.0.2",

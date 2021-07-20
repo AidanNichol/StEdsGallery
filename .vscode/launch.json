@@ -26,6 +26,30 @@
       "program": "${workspaceFolder}/server/index.js",
       "cwd": "${workspaceFolder}/server",
       "envFile": "${workspaceFolder}/server/.env"
+    },
+    {
+      "console": "integratedTerminal",
+      "restart": true,
+      "type": "pwa-node",
+      "request": "launch",
+      "name": "testRemodelProfiles",
+      "skipFiles": ["<node_internals>/**"],
+      "runtimeExecutable": "nodemon",
+      "program": "${workspaceFolder}/server/testRemodelProfiles.js",
+      "cwd": "${workspaceFolder}/server",
+      "envFile": "${workspaceFolder}/server/.env"
+    },
+    {
+      "console": "integratedTerminal",
+      "restart": true,
+      "type": "pwa-node",
+      "request": "launch",
+      "name": "server(nodemon)",
+      "skipFiles": ["<node_internals>/**"],
+      "runtimeExecutable": "nodemon",
+      "program": "${workspaceFolder}/server/index.js",
+      "cwd": "${workspaceFolder}/server",
+      "envFile": "${workspaceFolder}/server/.env"
     }
   ]
 }
