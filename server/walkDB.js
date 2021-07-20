@@ -69,6 +69,7 @@ const walk = sequelize.define(
     scaledPrf: { type: DataTypes.STRING, defaultValue: "N" },
     legendLeft: { type: DataTypes.NUMBER, defaultValue: 0 },
     legendTop: { type: DataTypes.NUMBER, defaultValue: 0 },
+    legend: { type: DataTypes.STRING },
     viaTT: { type: DataTypes.NUMBER, defaultValue: 0 },
     pickupGHS: { type: DataTypes.NUMBER, defaultValue: 0 },
     mapsDue: DataTypes.STRING,
