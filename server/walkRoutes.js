@@ -4,8 +4,8 @@ const { read, exists } = require("fs-jetpack");
 const Sequelize = require("sequelize");
 const { Op } = require("sequelize");
 const jetpack = require("fs-jetpack");
-const { createMapPdf } = require("./mappdf/createMapPdf");
 const { uploadWalk, updateWalkWithRemoteData } = require("./uploadWalk");
+const { default: fastify } = require("fastify");
 const { format } = dateFn;
 
 const isDev = (dev = true) => dev;
@@ -18,6 +18,7 @@ async function walkRoutes(fastify, options) {
   });
 
   fastify.get("/createMapPdf/:walkNo", (request, reply) => {
+    const { createMapPdf } = require("./mappdf/createMapPdf");
     let { walkNo } = request.params;
     return db.walk
       .findByPk(walkNo, { include: [db.region] })
@@ -100,8 +101,13 @@ async function walkRoutes(fastify, options) {
 
   fastify.get("/getWalkDetails/:dat", async (request) => {
     let { dat } = request.params;
-
-    let details = await getNextWalkData(dat);
+    let details = await db.walk.findOne({
+      include: [db.region],
+      where: { date: { [Op.gte]: dat } },
+      order: ["date"],
+    });
+    details = await details.get({ plain: true });
+    // let details = await getNextWalkData(dat);
     console.log(dat, details);
     let routes = await db.route.findAll({ where: { date: details.date } });
 
@@ -116,8 +122,10 @@ async function walkRoutes(fastify, options) {
     routes = routes.map((rt) => {
       rt = rt.get({ plain: true });
       delete rt.date;
-      rt.distance = Math.round(rt.distance / 1000, 1);
-      rt.mmdistance = Math.round(rt.mmdistance / 1000, 1);
+      if (rt.distance > 1000) {
+        rt.distance = Math.round(rt.distance / 1000, 1);
+        rt.mmdistance = Math.round(rt.mmdistance / 1000, 1);
+      }
       const prfImg = findImageFile(`${base}/profile-${dat}-walk-${rt.no}`);
       let gpxFile = `${base}/data-${dat}-walk-${rt.no}.gpx`;
       console.log("gpxFile", gpxFile);
@@ -125,7 +133,12 @@ async function walkRoutes(fastify, options) {
     });
 
     const jFile = `${WALKDATA}/${base}/data-${dat}-walk-gpx.json`;
-    let gpxJ = details.details === "Y" ? JSON.parse(read(jFile)) : [];
+    let gpxJ = [];
+    if (details.details === "Y") {
+      const data = read(jFile);
+      gpxJ = data ? JSON.parse(data) : [];
+    }
+    details.img = img;
     return { details, routes, gpxJ, img };
   });
 
@@ -133,6 +146,18 @@ async function walkRoutes(fastify, options) {
     const { walkNo } = request.params;
     const body = JSON.parse(request.body);
     const res = await db.walk.update(body, { where: { date: walkNo } });
+    return { res: "ok" };
+  });
+  fastify.post("/addRoute/:walkNo/:no", async (request) => {
+    const { walkNo, no } = request.params;
+    const body = JSON.parse(request.body);
+    const res = await db.route.update(body, { where: { date: walkNo, no } });
+    return { res: "ok" };
+  });
+  fastify.post("/createRoute/:walkNo/:no", async (request) => {
+    const { walkNo, no } = request.params;
+    const body = JSON.parse(request.body);
+    const res = await db.route.create(body);
     return { res: "ok" };
   });
 
@@ -143,10 +168,15 @@ async function walkRoutes(fastify, options) {
     return await uploadWalk(walkNo);
   });
 
+  fastify.get("/updateWalkWithRemoteData/:walkNo", async (request) => {
+    const { walkNo } = request.params;
+
+    return { res: "ok", walkNo };
+  });
   fastify.post("/updateWalkWithRemoteData/:walkNo", async (request) => {
     const { walkNo } = request.params;
     const body = JSON.parse(request.body);
-    const res = await updateWalkWithRemoteData(db, walkNo, body);
+    const res = await updateWalkWithRemoteData(walkNo, body);
     return { res: "ok" };
   });
 
@@ -197,29 +227,35 @@ async function walkRoutes(fastify, options) {
     dat = r.date;
     const base = `walkdata/${dat.substr(0, 4)}/${dat}`;
     r.mapimg = findImageFile(`${base}/map-${dat}`);
-    r.mapimgR = findImageFile(`${base}/mapR-${dat}`);
-    r.heading = findImageFile(`${base}/heading-${dat}`);
-    r.headingR = findImageFile(`${base}/headingR-${dat}`);
-    r.overlay = read(`${WALKDATA}/${base}/map-${dat}.ovl`);
-    r.headPos = r.headingR ? "Side" : "Top";
-    r.mapRot = r.mapimgR ? "Yes" : "No";
+    // r.mapimgR = findImageFile(`${base}/mapR-${dat}`);
+    // r.heading = findImageFile(`${base}/heading-${dat}`);
+    // r.headingR = findImageFile(`${base}/headingR-${dat}`);
+    // r.overlay = read(`${WALKDATA}/${base}/map-${dat}.ovl`);
+    // r.headPos = r.headingR ? "Side" : "Top";
+    // r.mapRot = r.mapimgR ? "Yes" : "No";
     console.log("returning", r);
     return r;
   });
 }
 
 async function getNextWalkData(dat) {
-  const result = await db.walk.findOne({
-    include: [db.region],
-    where: { date: { [Op.gte]: dat } },
-    order: ["date"],
-  });
-  return result;
+  try {
+    let result = await db.walk.findOne({
+      include: [db.region],
+      where: { date: { [Op.gte]: dat } },
+      order: ["date"],
+    });
+    result = result.get({ plain: true });
+    return result;
+  } catch (error) {
+    console.error(error);
+    fastify.log.error(error);
+  }
 }
 function findImageFile(nam) {
   for (const ext of ["pdf", "jpg", "png", "bmp"]) {
     const file = `${WALKDATA}/${nam}.${ext}`;
-    console.log("testing", file);
+    // console.log("testing", file);
     if (exists(file)) return `${nam}.${ext}`;
   }
   return "walkdata/mapnotavailable.pdf";
