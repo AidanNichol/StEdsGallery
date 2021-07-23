@@ -20,7 +20,10 @@ function drawHeader(doc, m) {
       .setFontSize(8)
       .text(format(new Date(m.walk), "EEEE, Do MMM, yyyy"), 19, 15);
     const createdDate = format(new Date(), " d MMM yyyy, HH:mm:ss");
-    doc.text(createdDate, 170 - m.margin, m.margin);
+    let startD = 170;
+    if (m.orientation === "portrait") startD = m.header === "T" ? 170 : 257;
+    else startD = m.header === "T" ? 257 : 170;
+    doc.text(createdDate, startD - m.margin, m.margin);
     doc.endFormObject("head");
     const mrg = m.margin;
     const sideMatrix = new doc.Matrix(0, 1, -1, 0, 297 - mrg, mrg);
