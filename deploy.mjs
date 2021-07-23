@@ -29,8 +29,8 @@ async function example() {
     await client.ensureDir("/apiServer");
     console.log(await client.pwd());
     // await client.uploadFrom('database.sqlite', 'database.sqlite');
-    await client.uploadFrom(".env", ".env");
-    await client.uploadFrom("package.json", "package.json");
+    // await client.uploadFrom(".env", ".env");
+    // await client.uploadFrom("package.json", "package.json");
     await client.uploadFromDir("server", "server");
     // await client.uploadFromDir('models', 'models');
     // await client.rename('index.js', 'index0.js');
