@@ -71,7 +71,7 @@ async function remodelProfiles(walkNo, routes) {
       //   await img2.writeAsync("./testimg4.png");
       await addMilageScale(img2, route.dist, pad, pxPerMile, no);
       await addElevationScale(img2, route, pad, pxPerFt, no);
-      await img2.writeAsync(`./testimg4-${no}.png`);
+      // await img2.writeAsync(`./testimg4-${no}.png`);
 
       // add the border back on to give room for the scales
       img2.write(fil2);
