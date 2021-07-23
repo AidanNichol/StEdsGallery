@@ -72,6 +72,7 @@ const walk = sequelize.define(
     legend: { type: DataTypes.STRING },
     viaTT: { type: DataTypes.NUMBER, defaultValue: 0 },
     pickupGHS: { type: DataTypes.NUMBER, defaultValue: 0 },
+    showSegNames: DataTypes.BOOLEAN,
     mapsDue: DataTypes.STRING,
     busLocation: DataTypes.STRING,
     busRoute: DataTypes.STRING,
