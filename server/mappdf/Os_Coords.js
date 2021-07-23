@@ -1,4 +1,6 @@
-const _ = require('lodash');
+const _ = require("lodash");
+const OSPoint = require("ospoint");
+
 const gridLetters = {
   SH: [2, 3],
   SJ: [3, 3],
@@ -19,7 +21,7 @@ const gridLetters = {
 };
 
 const getMapCoords = (gridpos, minX, maxY) => {
-  let [letters, west, north] = gridpos.split(' ');
+  let [letters, west, north] = gridpos.split(" ");
   let x = gridLetters[letters][0] * 100000 + west;
   let y = gridLetters[letters][1] * 100000 + north;
   x = (x - minX) / 100;
@@ -27,11 +29,13 @@ const getMapCoords = (gridpos, minX, maxY) => {
   return { x, y };
 };
 const deLetterMapCoords = (gridpos) => {
-  let [letters, west, north] = gridpos.split(' ');
-  let x = (gridLetters[letters][0] * 100000 + parseInt(west)) / 1000;
-  let y = (gridLetters[letters][1] * 100000 + parseInt(north)) / 1000;
+  let [letters, west, north] = gridpos.split(" ");
+  let eastings = gridLetters[letters][0] * 100000 + parseInt(west);
+  let northings = gridLetters[letters][1] * 100000 + parseInt(north);
+  const point = new OSPoint(northings, eastings);
+  let { latitude: lat, longitude: lon } = point.toWGS84();
 
-  return { x, y };
+  return { x: eastings, y: northings, lat, lon, eastings, northings };
 };
 const getGridLetters = (x1, y1) => {
   x = Math.floor(x1 / 100);
@@ -39,10 +43,10 @@ const getGridLetters = (x1, y1) => {
   //print "x1:x1 y1:y1 x:x y:y \n";
   const [key] = _.find(
     _.toPairs(gridLetters),
-    ([key, val]) => x === val[0] && y === val[1],
-  ) || ['??'];
+    ([key, val]) => x === val[0] && y === val[1]
+  ) || ["??"];
 
-  return key || '??';
+  return key || "??";
 };
 
 module.exports = { getMapCoords, deLetterMapCoords, getGridLetters };

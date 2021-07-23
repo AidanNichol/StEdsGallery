@@ -21,6 +21,7 @@ specifiers:
   log-update: ^4.0.0
   mailgun.js: ^3.3.2
   nodemon: ^2.0.7
+  ospoint: ^0.2.1
   sequelize: ^6.6.2
   sqlite3: ^5.0.2
   ts-node: ^9.1.1
@@ -45,6 +46,7 @@ dependencies:
   lodash: 4.17.21
   log-update: 4.0.0
   mailgun.js: 3.5.1
+  ospoint: 0.2.1
   sequelize: 6.6.5_sqlite3@5.0.2
   sqlite3: 5.0.2
   uuid: 8.3.2
@@ -2157,6 +2159,10 @@ packages:
     dependencies:
       os-homedir: 1.0.2
       os-tmpdir: 1.0.2
+    dev: false
+
+  /ospoint/0.2.1:
+    resolution: {integrity: sha512-P3unHc+SfN5JLyjrR+NLdMvhK2YWoupSJj3yo0OyRlZ8S1wn3Jt6Alv+UmB+h6y0Y3MGYvn9pRlLEapayPO5KQ==}
     dev: false
 
   /p-cancelable/1.1.0:
