@@ -12,9 +12,9 @@ const { decorateRoutes, drawNames } = require("./decorateRoutes");
 
 const walkdata = "/Users/aidan/Websites/htdocsC/walkdata";
 
-function createMapPdf(walkNo, walkData) {
+async function createMapPdf(walkNo, walkData) {
   console.log("createMap", walkNo);
-  const map = extractMapData(walkNo, walkData);
+  const map = await extractMapData(walkNo, walkData);
 
   map.minY -= walkData.bottom;
   map.maxY += walkData.top;
