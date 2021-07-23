@@ -3,14 +3,16 @@ const getenv = require("getenv");
 const logUpdate = require("log-update");
 const jetpack = require("fs-jetpack");
 const _ = require("lodash");
+const db = require("./walkDB");
 
 async function uploadWalk(walkNo) {
   await uploadfiles(walkNo);
+  await db.walk.update({ details: "Y" }, { where: { date: walkNo } });
   const currData = await db.walk.findByPk(walkNo, {
     include: [db.route],
   });
   fetch(
-    `https://www.stedwardsfellwalkers.co.uk/walk/updateWalkWithRemoteData/${walkNo}`,
+    `https://www.stedwardsfellwalkers.co.uk/apiServer/walks/updateWalkWithRemoteData/${walkNo}`,
 
     {
       method: "post",
@@ -18,13 +20,18 @@ async function uploadWalk(walkNo) {
     },
     false
   )
-    .then((res) => res.json())
+    .then((res) => {
+      res.json();
+    })
     .then((data) => {
       console.log("uploadWalk responded", data);
       // walkStale.set(true);
       return data;
+    })
+    .catch((error) => {
+      console.error(error);
+      return error;
     });
-  // .catch(handleError);
 }
 async function uploadfiles(walkNo) {
   const walkdata = "/Users/aidan/Websites/htdocsC/walkdata";
@@ -93,20 +100,25 @@ function formatFileSize(fileSize) {
   }
 }
 
-async function updateWalkWithRemoteData(db, walkNo, body) {
-  const { routes, walk } = body;
+async function updateWalkWithRemoteData(walkNo, body) {
+  const { routes, ...walk } = body;
   const currData = await db.walk.findByPk(walkNo, {
     include: [db.route],
   });
   if (!currData) {
+    console.log("creating " + walkNo + " " + JSON.stringify(walk));
     await db.walk.create(walk);
   } else {
+    console.log("updating " + walkNo + " " + JSON.stringify(walk));
     await db.walk.update(walk, { where: { date: walkNo } });
   }
   for (const route of routes) {
-    if (currData.routes.find((r) => r.no === route.no)) {
+    const no = route.no;
+    if (currData.routes.find((r) => r.no === no)) {
+      console.log(`updating route ${walkNo}/${no} ${JSON.stringify(route)}`);
       await db.route.update(route, { where: { date: walkNo, no: route.no } });
     } else {
+      console.log(`creating route ${walkNo}/${no} ${JSON.stringify(route)}`);
       await db.route.create(route);
     }
   }
