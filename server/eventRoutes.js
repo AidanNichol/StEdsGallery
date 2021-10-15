@@ -29,8 +29,51 @@ async function eventRoutes(fastify, options) {
   });
   fastify.get("/all", async (request, reply) => {
     return await db.event.findAll({
-      include: db.display,
+      include: { model: db.display, order: ["where"] },
     });
+  });
+  fastify.get("/:id", async (request, reply) => {
+    return await db.event.findByPk(request.params.id, {
+      include: { model: db.display, order: ["where"] },
+    });
+  });
+  fastify.post("/save/:id", async (req) => {
+    try {
+      console.log("events save", req.params);
+      // const authSeq = req.cookies.authSeq;
+      // console.log("authSeq", req.cookies);
+      isOkForRole(req, "admin");
+
+      const id = req.params.id;
+      const { unsaved, dirty, ...data } = await req.body;
+
+      let evnt = await db.event.findOne({
+        where: { id: id },
+      });
+      if (!evnt) {
+        await db.event.create(data, { include: db.display });
+        // await db.display.bulkCreate(displays);
+      } else {
+        await db.event.update(data, { where: { id } });
+        for (const disp of data.displays) {
+          await db.display.update(disp, {
+            where: { eventId: id, where: disp.where },
+          });
+        }
+      }
+
+      return {};
+    } catch (error) {
+      console.log(error);
+      throw new Error(error);
+    }
+  });
+  fastify.delete("/:id", async (req, reply) => {
+    isOkForRole(req, "admin");
+    const id = req.params.id;
+
+    // await db.display.destroy({ where: { eventId: id } });
+    await db.event.destroy({ where: { id } });
   });
 }
 module.exports = { eventRoutes };
