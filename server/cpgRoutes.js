@@ -76,17 +76,6 @@ async function cpgRoutes(fastify, options) {
       group: "album.aid",
       where: { year: year },
       order: [["title", "DESC"]],
-      // attributes: ["aid", "title", "pic_count"],
-      // include: {
-      //   model: db.picture,
-      //   attributes: [
-      //     "aid",
-      //     "pid",
-      //     [sequelize.fn("COUNT", sequelize.col("pid")), "count"],
-      //   ],
-      // },
-      // where: { year: year },
-      // order: [["title", "DESC"]],
     });
     return aggregations;
   });
@@ -109,6 +98,14 @@ async function cpgRoutes(fastify, options) {
     });
     return albums;
   });
+  fastify.get("/testRole", async (req) => {
+    const authSeq = req.cookies.authSeq;
+    console.log("authSeq", req.cookies);
+    if (!isOkForRole(req, "uploader")) {
+      throw Error("not authorized for uploading");
+    }
+    return "OK";
+  });
 
   fastify.post("/upload", async (req) => {
     try {
@@ -121,8 +118,6 @@ async function cpgRoutes(fastify, options) {
       const filename = await req.body.photos[1].filename;
       const title = await req.body.albumTitle.value;
       const photographer = await req.body.photographer.value;
-      // console.log("upload album",  title);
-      // console.log("upload photographer", photographer);
       const temp = `temp/_${filename}`;
       write(temp, buff);
       const year = title.substr(0, 4);
