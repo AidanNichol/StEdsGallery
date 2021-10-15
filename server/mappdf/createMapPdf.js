@@ -10,7 +10,8 @@ const { drawKey } = require("./drawKey");
 const { remodelProfiles } = require("../remodelProfiles/remodelProfiles");
 const { decorateRoutes, drawNames } = require("./decorateRoutes");
 
-const walkdata = "/Users/aidan/Websites/htdocsC/walkdata";
+const walkdata = "/Users/aidan/Websites/htdocsC";
+// let ver = 100;
 
 async function createMapPdf(walkNo, walkData) {
   console.log("createMap", walkNo);
@@ -30,16 +31,18 @@ async function createMapPdf(walkNo, walkData) {
   drawNames(doc, map);
   drawHeader(doc, map);
   drawKey(doc, map);
-  let pdf = `${walkdata}/${walkNo.substr(0, 4)}/${walkNo}/map-${walkNo}.pdf`;
-  doc.save(pdf); // will save the file in the current working directory
+  let pdf = `walkdata/${walkNo.substr(0, 4)}/${walkNo}/map-${walkNo}.pdf`;
+  doc.save(`${walkdata}/${pdf}`); // will save the file in the current working directory
   remodelProfiles(walkNo, map.routes);
-  return { img: pdf, map };
+  // pdf = `${pdf}?v=${++ver}}`;
+  return [pdf, map.orientation, map];
+  // return { img: pdf, map };
 }
 function GetPageLayout(map) {
   const headSz = 20;
-  ["portrait", "landscape"].forEach((O) => {
-    wdth = O === "portrait" ? 210 : 297;
-    hght = O === "portrait" ? 297 : 210;
+  ["P", "L"].forEach((O) => {
+    wdth = O === "P" ? 210 : 297;
+    hght = O === "P" ? 297 : 210;
     width = wdth - 2 * map.margin;
     height = hght - 2 * map.margin;
     ["T", "S"].forEach((P) => {
