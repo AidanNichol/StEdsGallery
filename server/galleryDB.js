@@ -10,18 +10,13 @@ const getenv = require("getenv");
 // const config = require("./config.json")[env];
 // config.logging = console.log;
 // const db = {};
-const dbLocation = getenv("DB_LOCATION", ".");
+const dbLocation = getenv("GALLERY_DB_LOCATION", "..");
 
-let sequelize = new Sequelize(
-  `${dbLocation}/gallery${dbLocation}sqlite`,
-  "aidan",
-  null,
-  {
-    dialect: "sqlite",
-    storage: `${dbLocation}/gallery.sqlite`,
-    logging: false,
-  }
-);
+let sequelize = new Sequelize(`${dbLocation}/gallery.sqlite`, "aidan", null, {
+  dialect: "sqlite",
+  storage: `${dbLocation}/gallery.sqlite`,
+  logging: false,
+});
 
 sequelize.addHook("afterDestroy", (record) => {
   // logKeys("destroyed", record);
