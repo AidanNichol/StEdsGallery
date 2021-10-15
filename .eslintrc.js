@@ -8,20 +8,21 @@ module.exports = {
     es6: true,
     browser: true,
   },
-  plugins: ["svelte3", "prettier"],
-  overrides: [
-    {
-      files: ["*.svelte"],
-      processor: "svelte3/svelte3",
-    },
-  ],
-  extends: ["prettier", "prettier/standard"],
+  // plugins: ["svelte3", "prettier"],
+  // overrides: [
+  //   {
+  //     files: ["*.svelte"],
+  //     processor: "svelte3/svelte3",
+  //   },
+  // ],
+  extends: ["prettier"],
+  // extends: ["eslint:recommended", "plugin:node/recommended"],
   rules: {
     // "prettier/prettier": "error",
-    "vue/singleline-html-element-content-newline": 0,
-    "vue/max-attributes-per-line": 0,
-    "vue/attributes-order": 0,
-    "vue/mustache-interpolation-spacing": 0,
+    // "vue/singleline-html-element-content-newline": 0,
+    // "vue/max-attributes-per-line": 0,
+    // "vue/attributes-order": 0,
+    // "vue/mustache-interpolation-spacing": 0,
     "arrow-parens": 0,
     // allow async-await
     "generator-star-spacing": 0,
