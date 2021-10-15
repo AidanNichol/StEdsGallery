@@ -4,4 +4,4 @@ node_modules
 ip-*.json
 *.sqlite
 *.php
-server/prog2021.js
+server/prog*.js
