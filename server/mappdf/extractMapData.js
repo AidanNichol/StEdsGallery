@@ -6,6 +6,7 @@ const { generateGpxRouteFile } = require("./generateGpxRouteFile");
 const db = require("../walkDB");
 const parseName = /([^*]+?)([*]?)(\-([LRTBC]+))?$/;
 const match = "West Witton -R".match(parseName);
+let convDist = { ft: 1, yds: 3, Mi: 3 * 1760 };
 console.log(match);
 async function extractMapData(walkNo, walkData) {
   const walkdata = "/Users/aidan/Websites/htdocsC/walkdata";
@@ -103,9 +104,23 @@ async function extractMapData(walkNo, walkData) {
     let ascent = parseInt(rt.wData.ascent.match(/(\d+)+ /)[1]);
     let descent = parseInt(rt.wData.descent.match(/(\d+)+ /)[1]);
     let segPts = [];
+    let x0, y0;
+    let distFt = 0;
+    let distM = 0;
     for (let i = 0; i < rt.wp.length; i++) {
       const wp = rt.wp[i];
       let { x, y, lat, lon, eastings, northings } = deLetterMapCoords(wp.pos);
+
+      if (i > 0) {
+        distM += Math.sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0));
+      }
+      [x0, y0] = [x, y];
+      let match = wp.dist.match(/(\d+)+ (.*)/);
+      let [, dist, unit] = wp.dist.match(/(\d+)+ (.*)/);
+      if (unit !== "yds" && unit !== "ft") {
+        console.log(dist, unit);
+      }
+      distFt += parseFloat(dist) * convDist[unit];
       const isStart = i === 0;
       const isEnd = i === rt.wp.length - 1;
       let elev = parseInt(wp.elev.match(/(\d+)+ /)[1]);
@@ -156,6 +171,8 @@ async function extractMapData(walkNo, walkData) {
         lastPt = i;
       }
     }
+    let newDistance = distFt / (3 * 1760);
+    distance = distM * 0.000621371;
     let gpxFile = `${walkdata}/${year}/${walk}/data-${walk}-walk-${no}.gpx`;
     let gpxData = generateGpxRouteFile(walkNo, no, map.area, rt.wp);
     await jetpack.write(gpxFile, gpxData);
