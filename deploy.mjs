@@ -1,6 +1,7 @@
 import ftp from "basic-ftp";
 import getenv from "getenv";
 import logUpdate from "log-update";
+import { requestRestart } from "./serverUtils.mjs";
 
 example();
 
@@ -34,6 +35,7 @@ async function example() {
     await client.uploadFromDir("server", "server");
     // await client.uploadFromDir('models', 'models');
     // await client.rename('index.js', 'index0.js');
+    await requestRestart(client);
     // console.log(await client.list());
   } catch (err) {
     console.log(err);
