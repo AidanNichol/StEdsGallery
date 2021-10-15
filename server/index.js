@@ -4,6 +4,7 @@ const fastifyCors = require("fastify-cors");
 const fastifyCookie = require("fastify-cookie");
 const fastifyStatic = require("fastify-static");
 const multipart = require("fastify-multipart");
+const { stdTimeFunctions } = require("pino");
 
 const { cpgRoutes } = require("./cpgRoutes.js");
 const { authRoutes } = require("./authRoutes.js");
@@ -15,6 +16,8 @@ const path = require("path");
 const jetpack = require("fs-jetpack");
 const getenv = require("getenv");
 const http = require("http");
+const packageJson = require("../package.json");
+const version = packageJson.version;
 const { cwd, read } = jetpack;
 
 dotenv.config();
@@ -23,7 +26,11 @@ console.log("galleryData", galleryDataPath);
 const fs = require("fs");
 const walkDataPath = process.env.WALK_DATA;
 console.log("walkdata", walkDataPath);
-const sitePrefix = getenv("SITE_PREFIX", "");
+const downloadsDataPath = process.env.DOWNLOADS_DATA;
+console.log("downloadsdata", downloadsDataPath);
+const sitePrefix = getenv("SITE_PREFIX", "apiServer/");
+console.log("sitePrefix", sitePrefix);
+console.log("cwd", jetpack.cwd());
 const serverFactory = (handler, opts) => {
   const server = http.createServer((req, res) => {
     handler(req, res);
@@ -44,7 +51,8 @@ const fastify = fastifyPkg({
   serverFactory,
   logger: {
     level: "info",
-    file: "logs/fastify.log", // will use pino.destination()
+    file: "../logs/fastify.log", // will use pino.destination()
+    timestamp: stdTimeFunctions.isoTime,
   },
 });
 fastify.register(fastifyCookie, {
@@ -57,6 +65,7 @@ fastify.register(fastifyCors, {
   origin: [/localhost/, /stedwardsfellwalkers\.co\.uk$/],
 });
 
+fastify.log.info(`server: ${sitePrefix} version: ${version}`);
 fastify.register(fastifyStatic, {
   root: galleryDataPath,
   prefix: `/${sitePrefix}galleryData`, // optional: default '/'
@@ -70,6 +79,15 @@ fastify.register(fastifyStatic, {
   decorateReply: false,
 });
 fastify.log.info(`static ${`/${sitePrefix}walkData`} ==> ${walkDataPath}`);
+fastify.register(fastifyStatic, {
+  root: downloadsDataPath,
+  prefix: `/${sitePrefix}downloads`,
+  decorateReply: false,
+});
+fastify.log.info(
+  `static ${`/${sitePrefix}downloads`} ==> ${downloadsDataPath}`
+);
+console.log(`static ${`/${sitePrefix}downloads`} ==> ${downloadsDataPath}`);
 
 // fastify.register(fastifyCors, {
 //   credentials: true,
@@ -96,7 +114,7 @@ const runit = async () => {
     process.exit(1);
   }
   console.log(
-    `listening on ${fastify.server.address()}:${fastify.server.address().port}`
+    `Server (v${version}) listening on ${fastify.server.address().port}`
   );
 };
 runit();
