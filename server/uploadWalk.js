@@ -20,9 +20,7 @@ async function uploadWalk(walkNo) {
     },
     false
   )
-    .then((res) => {
-      res.json();
-    })
+    .then((res) => res.json())
     .then((data) => {
       console.log("uploadWalk responded", data);
       // walkStale.set(true);
@@ -65,7 +63,7 @@ async function uploadfiles(walkNo) {
     // const list = await client.list("*.*");
     // // console.log("list", list);
     let tree = jetpack.inspectTree(libdir, { times: true }).children;
-    let files = tree.filter((f) => /(.jpg|.pdf|.json)$/.test(f.name));
+    let files = tree.filter((f) => /(.jpg|.pdf|.json|.gpx|.mmo)$/.test(f.name));
     let uList = [];
     for (const f of files) {
       let { name, size } = f;
@@ -100,25 +98,29 @@ function formatFileSize(fileSize) {
   }
 }
 
-async function updateWalkWithRemoteData(walkNo, body) {
+async function updateWalkWithRemoteData(walkNo, body, log) {
   const { routes, ...walk } = body;
   const currData = await db.walk.findByPk(walkNo, {
     include: [db.route],
   });
   if (!currData) {
     console.log("creating " + walkNo + " " + JSON.stringify(walk));
+    log.info("creating " + walkNo + " " + JSON.stringify(walk));
     await db.walk.create(walk);
   } else {
     console.log("updating " + walkNo + " " + JSON.stringify(walk));
+    log.info("updating " + walkNo + " " + JSON.stringify(walk));
     await db.walk.update(walk, { where: { date: walkNo } });
   }
   for (const route of routes) {
     const no = route.no;
     if (currData.routes.find((r) => r.no === no)) {
       console.log(`updating route ${walkNo}/${no} ${JSON.stringify(route)}`);
+      log.info(`updating route ${walkNo}/${no} ${JSON.stringify(route)}`);
       await db.route.update(route, { where: { date: walkNo, no: route.no } });
     } else {
       console.log(`creating route ${walkNo}/${no} ${JSON.stringify(route)}`);
+      log.info(`creating route ${walkNo}/${no} ${JSON.stringify(route)}`);
       await db.route.create(route);
     }
   }

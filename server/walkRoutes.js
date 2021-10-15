@@ -4,27 +4,41 @@ const { read, exists } = require("fs-jetpack");
 const Sequelize = require("sequelize");
 const { Op } = require("sequelize");
 const jetpack = require("fs-jetpack");
+const getenv = require("getenv");
+const Jimp = require("jimp");
+
 const { uploadWalk, updateWalkWithRemoteData } = require("./uploadWalk");
 const { default: fastify } = require("fastify");
+const sitePrefix = getenv("SITE_PREFIX", "");
+const packageJson = require("../package.json");
+const version = packageJson.version;
 const { format } = dateFn;
 
 const isDev = (dev = true) => dev;
-const WALKDATA = isDev()
-  ? "/Users/aidan/Websites/htdocsC"
-  : "/home/ajnichol/public_html";
+// const WALKDATA = isDev()
+//   ? "/Users/aidan/Websites/htdocsC"
+//   : "/home/ajnichol/public_html";
+const WALKDATA = process.env.WALK_DATA;
 async function walkRoutes(fastify, options) {
   fastify.get("/", async (request, reply) => {
-    return { hello: "world" };
+    return {
+      sitePrefix,
+      node: process.versions.node,
+      version,
+    };
   });
 
-  fastify.get("/createMapPdf/:walkNo", (request, reply) => {
+  fastify.get("/createMapPdf/:walkNo", async (request, reply) => {
     const { createMapPdf } = require("./mappdf/createMapPdf");
     let { walkNo } = request.params;
-    return db.walk
-      .findByPk(walkNo, { include: [db.region] })
-      .then((walkData) => {
-        return createMapPdf(walkNo, walkData);
-      });
+    let walkData = await db.walk.findByPk(walkNo, { include: [db.region] });
+    walkData = walkData.get({ plain: true });
+    const [map, orientation, mapData] = await createMapPdf(walkNo, walkData);
+    console.log("Map", { map, orientation });
+    const changes = { orientation, scaledPrf: "Y" };
+    await db.walk.update(changes, { where: { date: walkNo } });
+    walkData = { ...walkData, ...changes };
+    return { img: map, map: mapData };
   });
 
   fastify.get("/getYearsData/:year", async (request) => {
@@ -111,14 +125,16 @@ async function walkRoutes(fastify, options) {
     console.log(dat, details);
     let routes = await db.route.findAll({ where: { date: details.date } });
 
-    const base = `walkdata/${dat.substr(0, 4)}/${dat}`;
+    const base = `${dat.substr(0, 4)}/${dat}`;
     //dets['img'] = $this->FindImageFile("$base/map-$dat");
     let img = `${base}/map-${dat}.pdf`;
-    if (jetpack.exists(`${WALKDATA}/${img}`) !== "file") {
+    if (jetpack.exists(`${WALKDATA}/${img}`) === "file") {
+      img = `walkdata/${img}`;
+    } else {
+      console.log("not found", `${WALKDATA}/${img}`);
       img = `walkdata/mapnotavailable.pdf`;
     }
     // details = { ...details, img };
-    const imgConsts = { imgWd: 10, imgHt: 10, imgSize: 10 };
     routes = routes.map((rt) => {
       rt = rt.get({ plain: true });
       delete rt.date;
@@ -127,9 +143,11 @@ async function walkRoutes(fastify, options) {
         rt.mmdistance = Math.round(rt.mmdistance / 1000, 1);
       }
       const prfImg = findImageFile(`${base}/profile-${dat}-walk-${rt.no}`);
-      let gpxFile = `${base}/data-${dat}-walk-${rt.no}.gpx`;
+      const imgConsts = { imgWd: 10, imgHt: 10, imgSize: 10 };
+      // const imgConsts = getImageSize(prfImg);
+      let gpxFile = `/walkdata/${base}/data-${dat}-walk-${rt.no}.gpx`;
       console.log("gpxFile", gpxFile);
-      return { ...rt, ...imgConsts, prfImg, gpxFile };
+      return { ...rt, ...imgConsts, prfImg: `walkdata/${prfImg}`, gpxFile };
     });
 
     const jFile = `${WALKDATA}/${base}/data-${dat}-walk-gpx.json`;
@@ -176,19 +194,19 @@ async function walkRoutes(fastify, options) {
   fastify.post("/updateWalkWithRemoteData/:walkNo", async (request) => {
     const { walkNo } = request.params;
     const body = JSON.parse(request.body);
-    const res = await updateWalkWithRemoteData(walkNo, body);
+    const res = await updateWalkWithRemoteData(walkNo, body, fastify.log);
     return { res: "ok" };
   });
 
   fastify.get("/getRoutesGpxJ/:dat", async (request) => {
     let { dat } = request.params;
-    const base = `walkdata/${dat.substr(0, 4)}/${dat}`;
+    const base = `${dat.substr(0, 4)}/${dat}`;
     const jFile = `${WALKDATA}/${base}/data-${dat}-walk-gpx.json`;
     let data = JSON.parse(read(jFile));
     console.log(data);
     Object.entries(data).forEach(([no, route]) => {
       if (typeof route !== "object") return;
-      route.gpxFile = `${base}/data-${dat}-walk-${no}.gpx`;
+      route.gpxFile = `walkdata/${base}/data-${dat}-walk-${no}.gpx`;
     });
     return data;
   });
@@ -223,10 +241,10 @@ async function walkRoutes(fastify, options) {
     let { dat } = request.params;
 
     let r = await getNextWalkData(dat);
-    r = await r.get({ plain: true });
+    // r = await r.get({ plain: true });
     dat = r.date;
-    const base = `walkdata/${dat.substr(0, 4)}/${dat}`;
-    r.mapimg = findImageFile(`${base}/map-${dat}`);
+    const base = `${dat.substr(0, 4)}/${dat}`;
+    r.mapimg = `walkdata/${findImageFile(`${base}/map-${dat}`)}`;
     // r.mapimgR = findImageFile(`${base}/mapR-${dat}`);
     // r.heading = findImageFile(`${base}/heading-${dat}`);
     // r.headingR = findImageFile(`${base}/headingR-${dat}`);
@@ -237,7 +255,10 @@ async function walkRoutes(fastify, options) {
     return r;
   });
 }
-
+const getImageSize = async (prfImg) => {
+  let prf = await Jimp.read(prfImg);
+  return { imgWd: prf.bitmap.width, imgHt: prf.bitmap.height };
+};
 async function getNextWalkData(dat) {
   try {
     let result = await db.walk.findOne({
@@ -255,7 +276,7 @@ async function getNextWalkData(dat) {
 function findImageFile(nam) {
   for (const ext of ["pdf", "jpg", "png", "bmp"]) {
     const file = `${WALKDATA}/${nam}.${ext}`;
-    // console.log("testing", file);
+    console.log("testing", file);
     if (exists(file)) return `${nam}.${ext}`;
   }
   return "walkdata/mapnotavailable.pdf";
