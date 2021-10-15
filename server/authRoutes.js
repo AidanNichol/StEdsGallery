@@ -7,12 +7,21 @@ const { v4: uuidv4 } = require("uuid");
 const formData = require("form-data");
 const Mailgun = require("mailgun.js");
 const getenv = require("getenv");
+const { find } = require("fs-jetpack");
 const mailgun = new Mailgun(formData);
 const mg = mailgun.client({
   username: "api",
   key: process.env.MAILGUN_API_KEY,
 });
-
+const current = new Map();
+console.log("cwd", jetpack.cwd());
+const ips = jetpack.find(".", { matching: "**/ip-*.json" });
+for (const ipFile of ips) {
+  console.log("ip", ipFile);
+  const { roles, name, authSeq, ip } = jetpack.read(ipFile, "json");
+  console.log("file", { roles, name, authSeq });
+  current.set(ip, { roles, name, authSeq });
+}
 const auth_default = {
   ip: "",
   state: -1,
@@ -21,13 +30,17 @@ const auth_default = {
   name: "",
   roles: "",
 };
-const current = new Map();
 
-exports.isOkForRole = function isOkForRole(request, role) {
-  if (getenv.bool("DEVELOPMENT")) return true;
-  const roles = current.get(request.cookies.authSeq);
-  console.log(request.cookies.authSeq, roles, current);
-  return (roles || []).includes(role);
+exports.isOkForRole = function isOkForRole(request, role, alwaysReturn) {
+  // return true;
+  // if (getenv.bool("DEVELOPMENT")) return true;
+  const { roles = [], authSeq } = current.get(request.ip);
+  const OK =
+    request.cookies.authSeq === authSeq &&
+    (roles.includes(role) || roles.includes("admin"));
+  console.log(request.cookies.authSeq, roles, current, OK);
+  if (!OK && !alwaysReturn) throw Error(`not authorized for role: ${role}`);
+  return OK;
 };
 
 exports.authRoutes = async function authRoutes(fastify, options) {
@@ -63,6 +76,7 @@ exports.authRoutes = async function authRoutes(fastify, options) {
     const auth = read(filename, "json") || { ...auth_default, ip };
     // let result = contents ? JSON.parse(contents) : ;
     auth.filename = filename;
+    auth.ip = request.ip;
     return auth;
   }
 
@@ -73,13 +87,13 @@ exports.authRoutes = async function authRoutes(fastify, options) {
   }
 
   function processResponse(response, auth) {
-    let { filename, authSeq, verificationSeq, ...ret } =
+    let { filename, authSeq, verificationSeq, ip, roles, ...ret } =
       auth.state > 0 ? auth : auth_default;
     console.log("getAuth", auth);
     if (auth.state === 2) {
       // authSeq = uuidv4();
       authSeq = authSeq || uuidv4();
-      current.set(auth, auth.roles);
+      current.set(ip, { roles, authSeq });
       console.log("setting authSeq", authSeq);
       response = response.setCookie("authSeq", authSeq, {
         path: "/",
@@ -88,7 +102,7 @@ exports.authRoutes = async function authRoutes(fastify, options) {
         secure: true,
       });
     } else {
-      current.delete(auth.authSeq);
+      current.delete(ip);
       response = response.clearCookie("authSeq", { path: "/" });
     }
 
@@ -100,7 +114,7 @@ exports.authRoutes = async function authRoutes(fastify, options) {
       filename && remove(filename);
     }
 
-    response.send(ret);
+    response.send({ ...ret, authSeq, roles });
   }
   // function getAuth(request, response) {
   //   let auth = getAuthFromFile(request);
@@ -183,6 +197,7 @@ exports.authRoutes = async function authRoutes(fastify, options) {
           via,
           verificationSeq,
           filename: auth.filename,
+          ip: request.ip,
         };
 
         if (isEmail) await sendEmail(auth);
