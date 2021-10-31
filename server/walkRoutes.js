@@ -80,7 +80,6 @@ async function walkRoutes(fastify, options) {
 
       limit: 2,
     });
-    // $result = $this->db->query('SELECT DISTINCT substr(date,1,4) as year FROM walkday order by year DESC limit 2')->fetchAll(PDO::FETCH_COLUMN);
     return result;
   });
 
@@ -146,7 +145,7 @@ async function walkRoutes(fastify, options) {
       const imgConsts = { imgWd: 10, imgHt: 10, imgSize: 10 };
       // const imgConsts = getImageSize(prfImg);
       let gpxFile = `/walkdata/${base}/data-${dat}-walk-${rt.no}.gpx`;
-      console.log("gpxFile", gpxFile);
+      // console.log("gpxFile", gpxFile);
       return { ...rt, ...imgConsts, prfImg: `walkdata/${prfImg}`, gpxFile };
     });
 
@@ -230,13 +229,7 @@ async function walkRoutes(fastify, options) {
       ],
     });
   });
-  // fastify.get('GetWalkRawData/:dat', async (request)=>{
-  // {
-  //     $results = array();
-  //     $results['walkDetails'] = $this->db->query('SELECT * FROM walkday WHERE date = "' . $dat . '" ')->fetch(PDO::FETCH_ASSOC);
-  //     $results['routes'] = $this->db->query('SELECT * FROM walks WHERE date = "' . $dat . '" ')->fetchAll(PDO::FETCH_ASSOC);
-  //     return $results;
-  // }
+
   fastify.get("/getMapData/:dat", async (request) => {
     let { dat } = request.params;
 
@@ -245,12 +238,6 @@ async function walkRoutes(fastify, options) {
     dat = r.date;
     const base = `${dat.substr(0, 4)}/${dat}`;
     r.mapimg = `walkdata/${findImageFile(`${base}/map-${dat}`)}`;
-    // r.mapimgR = findImageFile(`${base}/mapR-${dat}`);
-    // r.heading = findImageFile(`${base}/heading-${dat}`);
-    // r.headingR = findImageFile(`${base}/headingR-${dat}`);
-    // r.overlay = read(`${WALKDATA}/${base}/map-${dat}.ovl`);
-    // r.headPos = r.headingR ? "Side" : "Top";
-    // r.mapRot = r.mapimgR ? "Yes" : "No";
     console.log("returning", r);
     return r;
   });
@@ -276,7 +263,7 @@ async function getNextWalkData(dat) {
 function findImageFile(nam) {
   for (const ext of ["pdf", "jpg", "png", "bmp"]) {
     const file = `${WALKDATA}/${nam}.${ext}`;
-    console.log("testing", file);
+    // console.log("testing", file);
     if (exists(file)) return `${nam}.${ext}`;
   }
   return "walkdata/mapnotavailable.pdf";

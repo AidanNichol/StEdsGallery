@@ -3,7 +3,9 @@ const { parse, format } = require("date-fns");
 function drawHeader(doc, m) {
   const fs = require("fs");
 
-  var logo = fs.readFileSync("./St.Edwards.col4a.png", { encoding: "latin1" });
+  var logo = fs.readFileSync("./St.Edwards.col4a.png", {
+    encoding: "latin1",
+  });
 
   doc.advancedAPI((doc) => {
     const identityMatrix = new doc.Matrix(1, 0, 0, 1, 0, 0);
