@@ -62,7 +62,7 @@ const findFeature = (wp, type) => {
 };
 const getXY = (pt) => {
   let { x, y } = deLetterMapCoords(pt.pos);
-  return { x: x / 1000, y: y / 1000, name: pt.name }
+  return { x, y, name: pt.name }
 }
 const extractLineFromArea = (pts) => {
   let i = _.findIndex(pts, p => /WP.*!$/i.test(p.name))

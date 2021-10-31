@@ -35,7 +35,7 @@ const deLetterMapCoords = (gridpos) => {
   const point = new OSPoint(northings, eastings);
   let { latitude: lat, longitude: lon } = point.toWGS84();
 
-  return { x: eastings, y: northings, lat, lon, eastings, northings };
+  return { x: eastings / 1000, y: northings / 1000, lat, lon, eastings, northings };
 };
 const getGridLetters = (x1, y1) => {
   x = Math.floor(x1 / 100);

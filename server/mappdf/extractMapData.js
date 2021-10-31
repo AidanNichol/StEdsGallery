@@ -145,8 +145,7 @@ async function extractMapData(walkNo, walkData) {
       maxLng = Math.max(maxLng, northings);
       wp.northings = northings;
       wp.eastings = eastings;
-      x = x / 1000;
-      y = y / 1000;
+
       wp.x = x;
       wp.y = y;
       wp.lat = lat;
@@ -193,7 +192,7 @@ async function extractMapData(walkNo, walkData) {
       }
     }
     let newDistance = distFt / (3 * 1760);
-    distance = distM * 0.000621371;
+    distance = distM * 0.621371;
     rt.wData.dist = showDist(distance);
     map.walks.push(rt.wData);
     let gpxFile = `data-${walk}-walk-${no}.gpx`;
