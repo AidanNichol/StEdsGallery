@@ -47,6 +47,7 @@ const https = getenv.bool("DEVELOPMENT")
       },
     }
   : {};
+jetpack.dir("../logs");
 const fastify = fastifyPkg({
   serverFactory,
   logger: {
