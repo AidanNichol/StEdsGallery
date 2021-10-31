@@ -28,6 +28,19 @@
       "envFile": "${workspaceFolder}/server/.env"
     },
     {
+      // "console": "integratedTerminal",
+      "restart": true,
+      "runtimeExecutable": "nodemon",
+      // "cwd": "/Users/aidan/Websites/htdocsC/walkdata",
+      // "envFile": "${workspaceFolder}/server/.env",
+      "type": "pwa-node",
+      "request": "launch",
+      "name": "testConvertFeatures",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/setup/convertFeatures.js",
+      // "stopOnEntry": true
+    },
+    {
       "console": "integratedTerminal",
       "restart": true,
       "type": "pwa-node",

@@ -7,6 +7,7 @@ const { drawGrid } = require("./drawGrid");
 const { drawSegments } = require("./drawSegments");
 const { drawHeader } = require("./drawHeader");
 const { drawKey } = require("./drawKey");
+const { drawFeatures } = require("./drawFeatures");
 const { remodelProfiles } = require("../remodelProfiles/remodelProfiles");
 const { decorateRoutes, drawNames } = require("./decorateRoutes");
 
@@ -25,6 +26,7 @@ async function createMapPdf(walkNo, walkData) {
   const doc = new jsPDF({ orientation: map.orientation });
   // console.log(doc.getFontList());
 
+  drawFeatures(doc, map);
   drawGrid(doc, map);
   decorateRoutes(doc, map);
   drawSegments(doc, map);
@@ -33,7 +35,7 @@ async function createMapPdf(walkNo, walkData) {
   drawKey(doc, map);
   let pdf = `walkdata/${walkNo.substr(0, 4)}/${walkNo}/map-${walkNo}.pdf`;
   doc.save(`${walkdata}/${pdf}`); // will save the file in the current working directory
-  remodelProfiles(walkNo, map.routes);
+  await remodelProfiles(walkNo, map.routes);
   // pdf = `${pdf}?v=${++ver}}`;
   return [pdf, map.orientation, map];
   // return { img: pdf, map };
