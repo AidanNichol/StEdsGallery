@@ -3,7 +3,7 @@ const py = (y, dy = 0) => left + y * scale + dy;
 const walkColor = [
   [0, 0, 0],
   [255, 0, 0],
-  [0, 0, 255],
+  [0, 102, 255],
   [0, 255, 0],
   [255, 165, 0],
   [128, 0, 128],
@@ -30,4 +30,4 @@ function drawSegments(doc, m) {
     });
   });
 }
-module.exports = { drawSegments };
+module.exports = { drawSegments, walkColor };
