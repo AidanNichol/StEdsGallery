@@ -1,11 +1,17 @@
 const Sequelize = require("sequelize");
 const { DataTypes } = require("sequelize");
 const getenv = require("getenv");
-const dbLocation = getenv("DB_LOCATION", ".");
+const jetpack = require("fs-jetpack");
 
-let sequelize = new Sequelize(`${dbLocation}/walks.sqlite`, "aidan", null, {
+const dbLocation = getenv("DB_LOCATION", ".");
+const dbFile = `${dbLocation}/walks.sqlite`;
+console.log("walks DB", jetpack.path(dbFile));
+if (jetpack.exists(dbFile) !== "file") {
+  console.log("db not found", dbFile);
+}
+let sequelize = new Sequelize(dbFile, "aidan", null, {
   dialect: "sqlite",
-  storage: `${dbLocation}/walks.sqlite`,
+  storage: dbFile,
   logging: false,
 });
 
