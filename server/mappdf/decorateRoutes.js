@@ -33,6 +33,10 @@ function drawNames(doc, m) {
     if (/C/.test(pt.shift)) opts.align = 'center';
     if (/T/.test(pt.shift)) opts.baseline = 'top';
     if (/B/.test(pt.shift)) opts.baseline = 'bottom';
+    if (/A/.test(pt.shift)) {
+      let match = pt.shift.match(/A(\d+)/)
+      opts.angle = parseInt(match[1])
+    }
     if (pt.start && opts.align === 'left') dx = 1.3;
     if (pt.end && opts.align === 'right') dx = -1.3;
     console.log(name, pt.shift, opts, dx);

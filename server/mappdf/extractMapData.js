@@ -6,8 +6,8 @@ const { generateGpxRouteFile } = require("./generateGpxRouteFile");
 const { findFeatures } = require("./findFeatures");
 
 const db = require("../walkDB");
-const parseName = /([^*]+?)([*]?)(\-([LRTBC]+))?$/;
-const match = "West Witton -R".match(parseName);
+const parseName = /([^*]+?)([*]?)(\-([LRTBCA\d]+))?$/;
+const match = "West Witton -RA45".match(parseName);
 let convDist = { ft: 1, yds: 3, Mi: 3 * 1760 };
 console.log(match);
 
