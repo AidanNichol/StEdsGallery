@@ -3,6 +3,7 @@ lockfileVersion: 5.3
 specifiers:
   '@types/node': ^15.0.1
   basic-ftp: ^4.6.6
+  colors.js: ^1.2.4
   csv-parse: ^4.15.4
   date-fns: ^2.21.3
   dotenv: ^9.0.2
@@ -32,6 +33,7 @@ specifiers:
 
 dependencies:
   basic-ftp: 4.6.6
+  colors.js: 1.2.4
   date-fns: 2.22.1
   dotenv: 9.0.2
   fastify: 3.19.0
@@ -839,6 +841,10 @@ packages:
 
   /color-name/1.1.4:
     resolution: {integrity: sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==}
+
+  /colors.js/1.2.4:
+    resolution: {integrity: sha1-U4DdOUERZ4b7wFX06kAgL8/goPA=}
+    dev: false
 
   /combined-stream/1.0.8:
     resolution: {integrity: sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==}
