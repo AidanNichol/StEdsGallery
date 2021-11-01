@@ -12,11 +12,11 @@ function findFeatures(walkDir) {
     console.log('findFeatures list', list)
     for (const fFile of list) {
         let data = walkDir.read(fFile, 'json');
-        let { wp } = data;
-        if (wp) {
+        if (data.wp) {
             data = extractFeatures(data);
+            // walkDir.write(data)
         }
-        features.push(...data)
+        features.push(...data.features)
 
     }
     features = _.sortBy(features, 'type')

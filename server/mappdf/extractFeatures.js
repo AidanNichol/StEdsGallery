@@ -6,6 +6,13 @@ function extractFeatures(obj) {
   features = [];
   let ext,
     wps = obj.wp;
+  wps = wps.map(pt => ({ ...pt, ...deLetterMapCoords(pt.pos) }));
+  let Xs = wps.map(pt => pt.x);
+  let Ys = wps.map(pt => pt.y);
+  let minX = _.min(Xs);
+  let minY = _.min(Ys);
+  let maxX = _.max(Xs);
+  let maxY = _.max(Ys);
   ["name", "line", "area", "point"].forEach((type) => {
     do {
       [ext, wps] = findFeature(wps, type);
@@ -14,7 +21,7 @@ function extractFeatures(obj) {
   // 
   // console.log(features)
   features = _.sortBy(features, 'type')
-  return features;
+  return { area: { minX, minY, maxX, maxY }, features };
 }
 const findEnd = (wp, i, fn) => {
   let end = _.findIndex(wp, fn, i + 1);
@@ -45,8 +52,8 @@ const findFeature = (wp, type) => {
   let del = featCount[type](wp, i);
   let colors = getColors(type, _.toLower(klass));
   let pts = wp.splice(i, del,);
-  // let text = getTextData(pts[0], rest)
-  pts = pts.map((pt) => getXY(pt))
+  pts = pts.map(pt => _.pick(pt, ['x', 'y', 'name']))
+  // pts = pts.map((pt) => getXY(pt))
   let text2 = /point|name/i.test(type) ? getText(type, rest, pts[0], getXY(wp[i])) : {};
   // let path = getPath(type, wps, m);
   let feature = { type, pts, ...colors, ...text2 }
