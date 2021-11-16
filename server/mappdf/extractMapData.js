@@ -1,23 +1,23 @@
-const { jsPDF } = require("jspdf"); // will automatically load the node version
-const jetpack = require("fs-jetPack");
-const _ = require("lodash");
-const { deLetterMapCoords } = require("./Os_Coords");
-const { generateGpxRouteFile } = require("./generateGpxRouteFile");
-const { findFeatures } = require("./findFeatures");
+const { jsPDF } = require('jspdf'); // will automatically load the node version
+const jetpack = require('fs-jetPack');
+const _ = require('lodash');
+const { deLetterMapCoords } = require('./Os_Coords');
+const { generateGpxRouteFile } = require('./generateGpxRouteFile');
+const { getFeatures } = require('./findFeatures');
 
-const db = require("../walkDB");
-const parseName = /([^*]+?)([*]?)(\-([LRTBCA\d]+))?$/;
-const match = "West Witton -RA45".match(parseName);
+const db = require('../walkDB');
+const parseName = /([^*]+?)([*]?)(\-([LRTBCAXY.\-\d]+))?$/;
+const match = 'West Witton -RA45'.match(parseName);
 let convDist = { ft: 1, yds: 3, Mi: 3 * 1760 };
 console.log(match);
 
-const fract = ["", "¼", "½", "¾"];
+const fract = ['', '¼', '½', '¾'];
 const showDist = (dist) => {
   let d = Math.round(dist * 4);
   return `${Math.floor(d / 4)}${fract[d % 4]} Mi`;
 };
 
-const walkdataDir = "/Users/aidan/Websites/htdocsC/walkdata";
+const walkdataDir = '/Users/aidan/Websites/htdocsC/walkdata';
 async function extractMapData(walkNo, walkData) {
   let year = walkNo.substr(0, 4);
   const walkDir = jetpack.cwd(`${walkdataDir}/${year}/${walkNo}`);
@@ -49,10 +49,10 @@ async function extractMapData(walkNo, walkData) {
     segments: {},
     routes: [],
     names: {},
-    orientation: "P",
+    orientation: 'P',
     showSegNames: 0,
-    header: "T",
-    legend: "TL",
+    header: 'T',
+    legend: 'TL',
     x(cx, dx = 0) {
       return this.leftZero + cx * this.scale + dx;
     },
@@ -73,7 +73,7 @@ async function extractMapData(walkNo, walkData) {
     },
   };
   const {
-    legend = "TL",
+    legend = 'TL',
     top,
     bottom,
     left,
@@ -92,14 +92,13 @@ async function extractMapData(walkNo, walkData) {
   map.showSegNames = showSegNames;
   let walk = map.walk;
 
-  map.features = await findFeatures(walkDir)
   gpxSumm = {};
   for (let no = 1; no <= 5; no++) {
     // console.log(
     //   "route path",
     //   `${walkdata}/${year}/${walk}/data-${walk}-walk-${no}.json`
     // );
-    const rt = walkDir.read(`data-${walk}-walk-${no}.json`, "json");
+    const rt = walkDir.read(`data-${walk}-walk-${no}.json`, 'json');
     let lastPt = 0,
       minElev = 99999,
       maxElev = 0;
@@ -123,7 +122,7 @@ async function extractMapData(walkNo, walkData) {
       let { x, y, lat, lon, eastings, northings } = deLetterMapCoords(wp.pos);
 
       if (i > 0) {
-        let legDist = Math.sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0))
+        let legDist = Math.sqrt((x - x0) * (x - x0) + (y - y0) * (y - y0));
         distM += legDist;
         segDist += legDist;
       }
@@ -160,19 +159,20 @@ async function extractMapData(walkNo, walkData) {
         end = [wp.eastings, wp.northings];
       }
       // console.log("wpname", wp.name);
-      const [, name, segPt, , shift = ""] = wp.name.match(parseName);
+      const [, name, segPt, , shift = ''] = wp.name.match(parseName);
       // console.log({ name, segPt, shift });
       if (isStart || isEnd || segPt) segPts.push(name);
-      if (wp.name.includes("Witton")) {
+      if (wp.name.includes('Witton')) {
         let name2 = name;
       }
       wp.name = name;
-      if (!/WP\d+/i.test(name) || (segPt && map.showSegNames))
+      if (!/WP\d+/i.test(name) || (segPt && map.showSegNames)) {
         map.names[name] = { x, y, shift, start: isStart, end: isEnd };
+      }
 
       if (segPt) map.segPoints.add({ x, y });
       if ((segPt || i === rt.wp.length - 1) && i !== lastPt) {
-        let segName = _.sortBy([rt.wp[lastPt].name, wp.name]).join("-");
+        let segName = _.sortBy([rt.wp[lastPt].name, wp.name]).join('-');
         let seg = map.segments[segName];
         if (!seg) {
           map.segments[segName] = {
@@ -185,7 +185,6 @@ async function extractMapData(walkNo, walkData) {
             seg.walks.push(no);
             seg.segDist.push(segDist);
           }
-
         }
         segDist = 0;
         lastPt = i;
@@ -219,11 +218,14 @@ async function extractMapData(walkNo, walkData) {
     let route = { date: walk, no, distance, mdistance, ascent, descent };
     if (currR) {
       const rChanges = _.pickBy(route, (value, key) => value !== currR[key]);
-      if (_.keys(rChanges.length > 0))
+      if (_.keys(rChanges.length > 0)) {
         await db.route.update(route, { where: { date: walkNo, no: route.no } });
+      }
     } else await db.route.create(route);
   }
   const rt = walkDir.write(`data-${walk}-walk-gpx.json`, gpxSumm);
+  map.features = await getFeatures(walkDir, map);
+
   return map;
 }
 module.exports = { extractMapData };
