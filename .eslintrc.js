@@ -20,15 +20,7 @@ module.exports = {
 
   // extends: ["eslint:recommended", "plugin:node/recommended"],
   rules: {
-    'dprint/dprint': [
-      'error',
-      {
-        config: {
-          // The TypeScript configuration of dprint
-          // See also https://dprint.dev/plugins/typescript/config/
-        },
-      },
-    ],
+    
     // "prettier/prettier": "error",
     // "vue/singleline-html-element-content-newline": 0,
     // "vue/max-attributes-per-line": 0,
