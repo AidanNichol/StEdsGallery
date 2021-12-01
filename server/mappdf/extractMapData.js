@@ -178,12 +178,12 @@ async function extractMapData(walkNo, walkData) {
           map.segments[segName] = {
             wps: rt.wp.slice(lastPt, i + 1),
             walks: [no],
-            segDist: [segDist],
+            segDist: {[no]:segDist},
           };
         } else {
           if (!seg.walks.includes(no)) {
             seg.walks.push(no);
-            seg.segDist.push(segDist);
+            seg.segDist[no]=segDist;
           }
         }
         segDist = 0;
