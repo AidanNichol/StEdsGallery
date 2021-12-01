@@ -47,11 +47,14 @@ function drawNames(doc, m) {
     let opp=Math.sin(rad)*size;
     let adj=Math.cos(rad)*size;
     let dx = 0, dy=ftHt*0.3;
-    if (/R/.test(pt.shift)) dx=-adj;
-    if (/C/.test(pt.shift)) dx=-adj/2;
+    if (/R/.test(pt.shift)) {
+      dy+=opp;
+      dx=-adj;}
+      if (/C/.test(pt.shift)) {dx=-adj/2;
+        dy+=opp/2;
+    }
     if (/T/.test(pt.shift)) dy=ftHt*0.9;
     if (/B/.test(pt.shift)) dy=-ftHt*0.1;
-    dy+=opp;
     if (pt.start||pt.end){
       if (  /R/.test(pt.shift)) dx -= ftHt/2;
       else if ( ! /C/.test(pt.shift)) dx += ftHt/2;
