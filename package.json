@@ -10,7 +10,7 @@
     "moveFiles": "clear&&node prisma/moveFiles.mjs --trace-warnings ",
     "generate": "npx prisma generate",
     "server": "clear&&yarn nodemon -r dotenv/config ./server/index.js",
-    "deploy": "clear&& node -r dotenv/config ./deploy.mjs",
+    "deploy": "clear&& pnpm version patch && node -r dotenv/config ./deploy.mjs",
     "uploadGalleryDB": "clear&& node -r dotenv/config ./uploadGalleryDB.mjs",
     "downloadGalleryDB": "clear&& node -r dotenv/config ./downloadGalleryDB.mjs"
   },
