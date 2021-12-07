@@ -52,7 +52,7 @@ const fastify = fastifyPkg({
   serverFactory,
   logger: {
     level: "info",
-    file: "../logs/fastify.log", // will use pino.destination()
+    file: "../logs/stEdsGallery.log", // will use pino.destination()
     timestamp: stdTimeFunctions.isoTime,
   },
 });

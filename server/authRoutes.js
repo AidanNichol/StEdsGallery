@@ -1,5 +1,5 @@
 const dateFn = require("date-fns");
-const fastify = require("fastify");
+// const fastify = require("fastify");
 const jetpack = require("fs-jetpack");
 const { read, exists, path, write, remove } = jetpack;
 const { format } = dateFn;
@@ -35,11 +35,16 @@ exports.isOkForRole = function isOkForRole(request, role, alwaysReturn) {
   // return true;
   // if (getenv.bool("DEVELOPMENT")) return true;
   const { roles = [], authSeq } = current.get(request.ip);
-  const OK =
-    request.cookies.authSeq === authSeq &&
-    (roles.includes(role) || roles.includes("admin"));
+  const authSeqMatch = request.cookies.authSeq === authSeq;
+  const hasRole = roles.includes(role) || roles.includes("admin");
+  const OK = authSeqMatch && hasRole;
   console.log(request.cookies.authSeq, roles, current, OK);
-  if (!OK && !alwaysReturn) throw Error(`not authorized for role: ${role}`);
+  if (!OK && !alwaysReturn)
+    throw Error(
+      `not authorized for role: ${role}. ${
+        authSeqMatch ? "" : "bad authSeq. "
+      }${hasRole ? "" : `doesn't have that role`}`
+    );
   return OK;
 };
 
