@@ -15,17 +15,19 @@ const mg = mailgun.client({
 });
 const current = new Map();
 console.log("cwd", jetpack.cwd());
-const ips = jetpack.find(".", { matching: "**/ip-*.json" });
-for (const ipFile of ips) {
-  console.log("ip", ipFile);
-  const { roles, name, authSeq, ip } = jetpack.read(ipFile, "json");
-  console.log("file", { roles, name, authSeq });
-  current.set(ip, { roles, name, authSeq });
+const userFiles = jetpack.find(".", { matching: "data/user-*.json" });
+for (const memFile of userFiles) {
+  console.log("ip", memFile);
+  const { roles, name, authSeq, memid, fingerprint } = jetpack.read(
+    memFile,
+    "json"
+  );
+  console.log("file", { roles, name, authSeq, memid, fingerprint });
+  current.set(fingerprint, { roles, name, authSeq, memid });
 }
 const auth_default = {
-  ip: "",
   state: -1,
-  id: "",
+  memid: "",
   identifier: "",
   name: "",
   roles: "",
@@ -34,11 +36,11 @@ const auth_default = {
 exports.isOkForRole = function isOkForRole(request, role, alwaysReturn) {
   // return true;
   // if (getenv.bool("DEVELOPMENT")) return true;
-  const { roles = [], authSeq } = current.get(request.ip);
-  const authSeqMatch = request.cookies.authSeq === authSeq;
+  const { roles = [], authseq } = current.get(request.headers["auth-token"]);
+  const authSeqMatch = request.headers.authseq === authseq;
   const hasRole = roles.includes(role) || roles.includes("admin");
   const OK = authSeqMatch && hasRole;
-  console.log(request.cookies.authSeq, roles, current, OK);
+  console.log(request.headers.authseq, roles, current, OK);
   if (!OK && !alwaysReturn)
     throw Error(
       `not authorized for role: ${role}. ${
@@ -52,23 +54,18 @@ exports.authRoutes = async function authRoutes(fastify, options) {
   fastify.get("/getAuth", async (request, reply) => {
     request.log.info("Some info about the current request");
     const auth = getAuthFromFile(request);
-    processResponse(reply, auth);
+    processResponse(request, reply, auth);
   });
 
   fastify.get("/checkAuth/:role", (request, reply) => {
     const { role } = request.params;
-    const authSeq = request.cookies.authSeq;
+    const authseq = request.headers.authseq;
 
     const auth = getAuthFromFile();
     const { state, identifier, name, roles, error } = auth;
 
     if (auth && roles.split(",").includes(role)) {
-      reply
-        .setCookie("authSeq", authSeq, {
-          path: "/",
-          signed: true,
-        })
-        .send({ state, identifier, name, roles, error });
+      reply.send({ state, identifier, name, roles, error });
     } else {
       return { error: "you are not authorized for this action" };
     }
@@ -76,85 +73,80 @@ exports.authRoutes = async function authRoutes(fastify, options) {
   });
 
   function getAuthFromFile(request) {
-    const { ip } = request;
-    let filename = path(`data/ip-${ip}.json`);
-    const auth = read(filename, "json") || { ...auth_default, ip };
-    // let result = contents ? JSON.parse(contents) : ;
-    auth.filename = filename;
-    auth.ip = request.ip;
-    return auth;
+    let {
+      "auth-token": fingerprint,
+      "member-id": memid,
+      "auth-seq": authseq,
+    } = request.headers;
+    if (memid === "undefined") {
+      const fpData = current.get(fingerprint);
+      memid = (fpData || {}).memid;
+    }
+    let filename = path(`data/user-${memid}.json`);
+    let auth = read(filename, "json") || auth_default;
+    if (auth.fingerprint !== fingerprint) auth = auth_default;
+
+    return { ...auth, fingerprint, filename };
   }
 
-  function saveAuthToFile(auth) {
+  function saveAuthToFile(request, auth) {
     console.log("saving", auth);
-    write(auth.filename, auth);
+    write(auth.filename, {
+      ...auth,
+      fingerprint: request.headers["auth-token"],
+    });
     console.log("written");
   }
 
-  function processResponse(response, auth) {
-    let { filename, authSeq, verificationSeq, ip, roles, ...ret } =
-      auth.state > 0 ? auth : auth_default;
+  function processResponse(request, response, auth) {
+    let {
+      filename,
+      authseq,
+      verificationSeq,
+      memid,
+      fingerprint,
+      roles,
+      ...ret
+    } = auth.state > 0 ? auth : auth_default;
     console.log("getAuth", auth);
     if (auth.state === 2) {
-      // authSeq = uuidv4();
-      authSeq = authSeq || uuidv4();
-      current.set(ip, { roles, authSeq });
-      console.log("setting authSeq", authSeq);
-      response = response.setCookie("authSeq", authSeq, {
-        path: "/",
-        signed: false,
-        sameSite: "none",
-        secure: true,
-      });
-    } else {
-      current.delete(ip);
-      response = response.clearCookie("authSeq", { path: "/" });
+      authseq = authseq || uuidv4();
+      delete auth.error;
+      current.set(fingerprint, auth);
+      console.log("setting authSeq", authseq);
     }
 
     if (auth.state >= 0) {
-      delete auth.error;
-      write(filename, { ...auth, authSeq });
+      saveAuthToFile(request, { ...auth, authseq });
     } else {
       console.log("removing", filename);
       filename && remove(filename);
+      current.has(fingerprint) && current.delete(fingerprint);
     }
-
-    response.send({ ...ret, authSeq, roles });
+    const resp = { ...ret, authseq, roles };
+    console.log("process response", resp);
+    response.send(resp);
   }
-  // function getAuth(request, response) {
-  //   let auth = getAuthFromFile(request);
-  //   delete auth.verificationSeq;
-  //   return auth;
-  // }
 
   fastify.get("/logout", (request, response) => {
     let auth = getAuthFromFile(request);
-    auth.state = -1;
-    processResponse(response, auth);
-    // remove(device.file);
-
-    // auth = { ...auth_default };
-    // const { state, identifier, name, error, roles, authSeq } = device;
-
-    // response
-    //   .clearCookie("authSeq", {
-    //     path: "/",
-    //     signed: true,
-    //   })
-    //   .send({ state, identifier, name, roles, error });
+    jetpack.remove(auth.filename);
+    current.delete(auth.fingerprint);
+    auth = { ...auth_default };
+    processResponse(request, response, auth);
   });
 
   function findMember(field, ids) {
     const authUsers = [
       {
-        id: "M1049",
+        memid: "M1049",
         name: "Aidan Nichol",
         mobile: "07748245774",
         email: "aidan@nicholware.co.uk",
         roles: "tester,uploader,admin",
       },
       {
-        id: "M825",
+        memid: "M825",
         name: "Peter Reed",
         mobile: "07761064556",
         email: "pr2@blueyonder.co.uk",
@@ -177,8 +169,6 @@ exports.authRoutes = async function authRoutes(fastify, options) {
 
       auth.error = null;
 
-      // if($device['state']!==0)return this-logout($request, $response);
-
       const isEmail = identifier.includes("@");
       const ids = isEmail ? [identifier] : expandMobile(identifier);
       const field = isEmail ? "email" : "mobile";
@@ -190,7 +180,6 @@ exports.authRoutes = async function authRoutes(fastify, options) {
           (isEmail ? "email address" : "mobile phone number") +
           ` of ${identifier} was found.`;
       } else {
-        // logger->info("changeStatus", (array) member);
         let via = isEmail ? "email" : "text";
         let verificationSeq = Math.floor(
           Math.random() * (999999 - 100000) + 100000
@@ -201,18 +190,14 @@ exports.authRoutes = async function authRoutes(fastify, options) {
           identifier,
           via,
           verificationSeq,
-          filename: auth.filename,
-          ip: request.ip,
+          filename: path(`data/user-${member.memid}.json`),
         };
+        current.set(request.headers["auth-token"], auth);
 
         if (isEmail) await sendEmail(auth);
         else await sendText(auth);
-        // saveAuthToFile(auth);
       }
-      processResponse(response, auth);
-      // delete auth.verificationSeq;
-      // const { state, name, error, via } = auth;
-      // return { state, identifier, name, error, via };
+      processResponse(request, response, auth);
     }
   );
 
@@ -221,38 +206,19 @@ exports.authRoutes = async function authRoutes(fastify, options) {
     const auth = getAuthFromFile(request);
     let authSeq = "";
     auth.error = null;
-    // logout resets everthing and can be called in any state
 
     if (auth.state !== 1) {
       auth.state = -1;
       auth.error = `Internal error - server not expecting verification code (${auth.state})`;
-      processResponse(reply, auth);
-      // return logout(
-      //   request,
-      //   response,
-      // );
+      processResponse(request, response, auth);
     } else if (auth.verificationSeq === verification) {
       auth.state = 2;
-      // auth.verificationSeq = "";
-      // authSeq = uuidv4();
-      // request.log.info(`authSeq`, authSeq);
-      // auth.authSeq = authSeq;
-
-      // saveAuthToFile(auth);
+      auth.verificationSeq = "";
     } else {
       request.log.info(`mismatch: ${auth.verificationSeq} !== ${verification}`);
       auth.error = "verfification code does not match";
-      // logger->error(`changeStatus error:${device.error}`, [device['verificationSeq'], verification]);
     }
-    processResponse(response, auth);
-    // const { state, identifier, name, error, roles } = auth;
-
-    // response
-    //   .setCookie("authSeq", authSeq, {
-    //     path: "/",
-    //     signed: true,
-    //   })
-    //   .send({ state, identifier, name, roles, error });
+    processResponse(request, response, auth);
   });
 };
 function expandMobile(id) {
