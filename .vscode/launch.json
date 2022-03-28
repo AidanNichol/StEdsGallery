@@ -37,7 +37,7 @@
       "request": "launch",
       "name": "testConvertFeatures",
       "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}/setup/convertFeatures.js",
+      "program": "${workspaceFolder}/setup/convertFeatures.js"
       // "stopOnEntry": true
     },
     {
@@ -60,6 +60,7 @@
       "name": "server(nodemon)",
       "skipFiles": ["<node_internals>/**"],
       "runtimeExecutable": "nodemon",
+      "runtimeArgs": ["--ext", "js", "--ignore", "server/data/"],
       "program": "${workspaceFolder}/server/index.js",
       "cwd": "${workspaceFolder}/server",
       "envFile": "${workspaceFolder}/server/.env"
