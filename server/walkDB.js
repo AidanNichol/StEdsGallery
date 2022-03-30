@@ -3,16 +3,15 @@ const { DataTypes } = require("sequelize");
 const getenv = require("getenv");
 const jetpack = require("fs-jetpack");
 
-const dbLocation = getenv("DB_LOCATION", ".");
-const dbFile = `${dbLocation}/walks.sqlite`;
-console.log("walks DB", jetpack.path(dbFile));
-if (jetpack.exists(dbFile) !== "file") {
-  console.log("db not found", dbFile);
-}
-let sequelize = new Sequelize(dbFile, "aidan", null, {
-  dialect: "sqlite",
-  storage: dbFile,
-  logging: false,
+let sequelize = new Sequelize({
+  dialect: "mysql",
+  dialectOptions: {
+    host: "localhost",
+    user: getenv("mysql_user"),
+    database: getenv("mysql_walks_database"),
+    password: getenv("mysql_password"),
+  },
+  logging: console.log,
 });
 
 const region = sequelize.define(

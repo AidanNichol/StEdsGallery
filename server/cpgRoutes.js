@@ -34,10 +34,10 @@ async function cpgRoutes(fastify, options) {
     return results;
   });
   fastify.get("/getPictures", async (request) => {
-    const [results, metadata] = await db.sequelize.query(
-      "SELECT name FROM sqlite_master WHERE type ='table' AND name NOT LIKE 'sqlite_%';"
-    );
-    console.log("getPictures ", results, metadata);
+    // const [results, metadata] = await db.sequelize.query(
+    //   "SELECT name FROM sqlite_master WHERE type ='table' AND name NOT LIKE 'sqlite_%';"
+    // );
+    // console.log("getPictures ", results, metadata);
     const pictures = await db.picture.findAll({
       order: [["aid", "DESC"]],
       limit: 30,

@@ -5,19 +5,16 @@ const getenv = require("getenv");
 // const { logKeys } = require('../util/logObj');
 // const { logTrace } = require('../util/logTrace');
 
-// const
-//  = process.env.NODE_ENV || 'development';
-// const config = require("./config.json")[env];
-// config.logging = console.log;
-// const db = {};
-const dbLocation = getenv("GALLERY_DB_LOCATION", "..");
-
-let sequelize = new Sequelize(`${dbLocation}/gallery.sqlite`, "aidan", null, {
-  dialect: "sqlite",
-  storage: `${dbLocation}/gallery.sqlite`,
-  logging: false,
+let sequelize = new Sequelize({
+  dialect: "mysql",
+  dialectOptions: {
+    host: "localhost",
+    user: getenv("mysql_user"),
+    database: getenv("mysql_gallery_database"),
+    password: getenv("mysql_password"),
+  },
+  logging: console.log,
 });
-
 sequelize.addHook("afterDestroy", (record) => {
   // logKeys("destroyed", record);
 });

@@ -6,3 +6,4 @@ ip-*.json
 *.php
 server/prog*.js
 server/data/user-M1049.json
+temp.txt
