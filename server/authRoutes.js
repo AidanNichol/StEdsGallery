@@ -18,12 +18,12 @@ console.log("cwd", jetpack.cwd());
 const userFiles = jetpack.find(".", { matching: "data/user-*.json" });
 for (const memFile of userFiles) {
   console.log("ip", memFile);
-  const { roles, name, authSeq, memid, fingerprint } = jetpack.read(
+  const { roles, name, authseq, memid, fingerprint } = jetpack.read(
     memFile,
     "json"
   );
-  console.log("file", { roles, name, authSeq, memid, fingerprint });
-  current.set(fingerprint, { roles, name, authSeq, memid });
+  console.log("file", { roles, name, authseq, memid, fingerprint });
+  current.set(fingerprint, { roles, name, authseq, memid });
 }
 const auth_default = {
   state: -1,
@@ -204,7 +204,7 @@ exports.authRoutes = async function authRoutes(fastify, options) {
   fastify.get("/checkVerfication/:verification", async (request, response) => {
     const { verification } = request.params;
     const auth = getAuthFromFile(request);
-    let authSeq = "";
+    let authseq = "";
     auth.error = null;
 
     if (auth.state !== 1) {
