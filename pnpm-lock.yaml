@@ -28,6 +28,7 @@ specifiers:
   nodemon: ^2.0.7
   ospoint: ^0.2.1
   sequelize: ^6.6.2
+  textmagic-rest-client: ^1.0.11
   ts-node: ^9.1.1
   typescript: ^4.2.4
   uuid: ^8.3.2
@@ -54,6 +55,7 @@ dependencies:
   mysql2: 2.3.3
   ospoint: 0.2.1
   sequelize: 6.6.5_mysql2@2.3.3
+  textmagic-rest-client: 1.0.11
   uuid: 8.3.2
 
 devDependencies:
@@ -2760,6 +2762,13 @@ packages:
   /text-table/0.2.0:
     resolution: {integrity: sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=}
     dev: true
+
+  /textmagic-rest-client/1.0.11:
+    resolution: {integrity: sha512-XiYzK4rMIxTif1bLXlJLPY6zztDunyEGpRsweFyLzrlHfAZ62ZeVrFQGa4MsSclfsfjv/CYJiJqQ0obAsupWmw==}
+    engines: {'0': node >= 0.10.0}
+    dependencies:
+      lodash: 4.17.21
+    dev: false
 
   /timm/1.7.1:
     resolution: {integrity: sha512-IjZc9KIotudix8bMaBW6QvMuq64BrJWFs1+4V0lXwWGQZwH+LnX87doAYhem4caOEusRP9/g6jVDQmZ8XOk1nw==}

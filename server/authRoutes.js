@@ -9,6 +9,8 @@ const Mailgun = require("mailgun.js");
 const getenv = require("getenv");
 const { find } = require("fs-jetpack");
 const mailgun = new Mailgun(formData);
+const TMClient = require("textmagic-rest-client");
+
 const mg = mailgun.client({
   username: "api",
   key: process.env.MAILGUN_API_KEY,
@@ -164,7 +166,7 @@ exports.authRoutes = async function authRoutes(fastify, options) {
     "/checkIdentifier/:identifier/:role",
     async (request, response) => {
       // Check the identifier and send verification code
-      const { identifier, role } = request.params;
+      let { identifier, role } = request.params;
       let auth = getAuthFromFile(request);
 
       auth.error = null;
@@ -180,6 +182,7 @@ exports.authRoutes = async function authRoutes(fastify, options) {
           (isEmail ? "email address" : "mobile phone number") +
           ` of ${identifier} was found.`;
       } else {
+        identifier = ids[0];
         let via = isEmail ? "email" : "text";
         let verificationSeq = Math.floor(
           Math.random() * (999999 - 100000) + 100000
@@ -222,12 +225,11 @@ exports.authRoutes = async function authRoutes(fastify, options) {
   });
 };
 function expandMobile(id) {
-  id = id.replaceAll(" ", "");
+  id = id.replace(/ /g, "");
   if (id[0] === "0") id = id.substr(1);
-  if (substr(id, 0, 3) === "+44") id = id.substr(3);
-  if (substr(id, 0, 2) === "44") id = id.substr(2);
-
-  return ["0" + id, "+44" + id, "44" + id];
+  if (id.substr(0, 3) === "+44") id = id.substr(3);
+  if (id.substr(0, 2) === "44") id = id.substr(2);
+  return ["+44" + id, "44" + id, "0" + id];
 }
 async function sendEmail(device) {
   const to = `${device.name} <${device.identifier}>`;
@@ -243,4 +245,12 @@ async function sendEmail(device) {
   } catch (error) {
     console.log(err); // logs any error
   }
+}
+async function sendText(device) {
+  console.log("sendtext", device);
+  var c = new TMClient(getenv("TEXTMAGIC_NAME"), getenv("TEXTMAGIC_PASSWORD"));
+  const text = `Your Verification code for authenticated access to St. Edwards Fellwalkers is ${device.verificationSeq}`;
+  c.Messages.send({ text, phones: device.identifier }, function (err, res) {
+    console.log("Messages.send()", err, res);
+  });
 }
