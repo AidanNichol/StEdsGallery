@@ -79,23 +79,6 @@ async function cpgRoutes(fastify, options) {
     });
     return aggregations;
   });
-  fastify.get("/getAllAlbums", async (request) => {
-    const aggregations = await db.album.findAll({
-      attributes: [
-        "aid",
-        "title",
-        "year",
-        [sequelize.fn("COUNT", sequelize.col("pictures.aid")), "count"],
-      ],
-      include: {
-        model: db.picture,
-        attributes: [],
-      },
-      group: "album.aid",
-      order: [["title", "DESC"]],
-    });
-    return aggregations;
-  });
 
   fastify.get("/getAlbum/:aid", async (request) => {
     const { aid } = request.params;
