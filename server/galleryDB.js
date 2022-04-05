@@ -31,7 +31,7 @@ const album = sequelize.define(
     },
     title: DataTypes.STRING,
     description: DataTypes.STRING,
-    hidden: { type: DataTypes.BOOLEAN, defaultValue: false },
+    hidden: { type: DataTypes.NUMBER, defaultValue: 0 },
     directory: DataTypes.STRING,
     year: DataTypes.STRING,
 
@@ -57,6 +57,8 @@ const picture = sequelize.define(
     width: DataTypes.NUMBER,
     height: DataTypes.NUMBER,
     title: DataTypes.STRING,
+    hidden: { type: DataTypes.NUMBER, defaultValue: 0 },
+
     caption: DataTypes.STRING,
 
     photographer: DataTypes.STRING,

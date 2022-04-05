@@ -16,9 +16,7 @@ const { format } = dateFn;
 // const { Op } = sequelize;
 
 const isDev = (dev = true) => dev;
-const WALKDATA = isDev()
-  ? "/Users/aidan/Websites/htdocsC"
-  : "/home/ajnichol/public_html";
+const galleryDataPath = process.env.GALLERY_DATA;
 
 async function cpgRoutes(fastify, options) {
   fastify.get("/", async (request, reply) => {
@@ -107,7 +105,42 @@ async function cpgRoutes(fastify, options) {
     return "OK";
   });
 
-  fastify.post("/upload", async (req) => {
+  fastify.post("/changePhotographer", async (req) => {
+    const { ids, photographer } = await req.body;
+    const count = await db.picture.update(
+      { photographer },
+      { where: { pid: ids } }
+    );
+    return { count };
+  });
+  fastify.post("/changeTitle", async (req) => {
+    const { ids, title } = await req.body;
+    const count = await db.picture.update({ title }, { where: { pid: ids } });
+    return { count };
+  });
+  fastify.post("/changeHidden", async (req) => {
+    const { ids, hidden } = await req.body;
+    const count = await db.picture.update(
+      { hidden: hidden ? 1 : 0 },
+      { where: { pid: ids } }
+    );
+    return { count };
+  });
+  fastify.post("/deletePictures", async (req) => {
+    const { ids, aid } = await req.body;
+    const album = await db.album.findByPk(aid);
+
+    const folder = `${galleryDataPath}/${album.directory}`;
+    const pics = jetpack.cwd(folder); // new jetpack context
+    const pictures = await db.picture.findAll({ where: { pid: ids } });
+    const filter = pictures.map((p) => p.filename.replace(".", "*."));
+    console.log(folder, { filter });
+    const files = pics.find(".", { matching: filter });
+    console.log({ files });
+    files.forEach(pics.remove);
+    return {};
+  });
+  fastify.post("/upload", async (req, reply) => {
     try {
       const authSeq = req.cookies.authSeq;
       console.log("authSeq", req.cookies);
@@ -161,7 +194,10 @@ async function cpgRoutes(fastify, options) {
         },
         { where: { pid: pid } }
       );
-      return {};
+      reply
+        .code(200)
+        .header("Content-Type", "text/plain; charset=utf-8")
+        .send(`${pid}`);
     } catch (error) {
       console.log(error);
       throw new Error(error);
