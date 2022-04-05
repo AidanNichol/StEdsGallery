@@ -1,4 +1,6 @@
 // Require the framework and instantiate it
+const dotenv = require("dotenv");
+dotenv.config();
 const fastifyPkg = require("fastify");
 const fastifyCors = require("fastify-cors");
 const fastifyCookie = require("fastify-cookie");
@@ -6,12 +8,6 @@ const fastifyStatic = require("fastify-static");
 const multipart = require("fastify-multipart");
 const { stdTimeFunctions } = require("pino");
 
-const { cpgRoutes } = require("./cpgRoutes.js");
-const { authRoutes } = require("./authRoutes.js");
-const { walkRoutes } = require("./walkRoutes.js");
-const { eventRoutes } = require("./eventRoutes.js");
-
-const dotenv = require("dotenv");
 const path = require("path");
 const jetpack = require("fs-jetpack");
 const getenv = require("getenv");
@@ -20,7 +16,10 @@ const packageJson = require("../package.json");
 const version = packageJson.version;
 const { cwd, read } = jetpack;
 
-dotenv.config();
+const { cpgRoutes } = require("./cpgRoutes.js");
+const { authRoutes } = require("./authRoutes.js");
+const { walkRoutes } = require("./walkRoutes.js");
+const { eventRoutes } = require("./eventRoutes.js");
 const galleryDataPath = process.env.GALLERY_DATA;
 console.log("galleryData", galleryDataPath);
 const fs = require("fs");
