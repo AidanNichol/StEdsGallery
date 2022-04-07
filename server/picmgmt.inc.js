@@ -1,26 +1,29 @@
-const Jimp = require('jimp');
-const jetpack = require('fs-jetpack');
+const Jimp = require("jimp");
+const jetpack = require("fs-jetpack");
 // Add a picture to an album
 async function add_picture(log, temp, filename, directory) {
   let galleryDir = `${process.env.GALLERY_DATA}/${directory}`;
   let baseImage = `${galleryDir}/${filename}`;
   jetpack.dir(`gallery/${directory}`);
-  if (jetpack.exists(temp) !== 'file') console.log('ugh!', temp, jetpack.exists(temp));
+  if (jetpack.exists(temp) !== "file")
+    console.log("ugh!", temp, jetpack.exists(temp));
   let image;
   try {
     image = await Jimp.read(temp);
 
     let { width, height } = image.bitmap;
-    if (jetpack.exists(baseImage) !== 'file') {
+    if (jetpack.exists(baseImage) !== "file") {
       let ratio = Math.min(1280 / width, 1280 / height);
 
       // resize picture if it's bigger than the max width or height for uploaded pictures
       if (ratio < 1) {
         width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
         await image.clone().resize(width, Jimp.AUTO).writeAsync(baseImage);
       } else {
         await image.clone().writeAsync(baseImage);
       }
+      console.log("newSize", { width, height, ratio });
     }
     log.info(`created ${baseImage}`);
     let srcset = ``;
@@ -33,7 +36,7 @@ async function add_picture(log, temp, filename, directory) {
       // console.log("ext", image.getExtension());
       let picName = `${file}~${sz}.${ext}`;
       let newF = `${galleryDir}/${picName}`;
-      if (jetpack.exists(newF) !== 'file') {
+      if (jetpack.exists(newF) !== "file") {
         await image
           .clone()
           .resize(sz, sz === 70 ? 70 : Jimp.AUTO)
@@ -41,7 +44,7 @@ async function add_picture(log, temp, filename, directory) {
 
         log.info(`created ${newF}`);
       }
-      console.log('created', newF);
+      console.log("created", newF);
       srcset = `${srcset}${directory}/${picName} ${sz}w, `;
     }
     jetpack.remove(temp);
