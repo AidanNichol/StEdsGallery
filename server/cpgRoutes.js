@@ -78,6 +78,27 @@ async function cpgRoutes(fastify, options) {
     return aggregations;
   });
 
+  fastify.get("/getAllAlbums", async (request) => {
+    const { year } = request.params;
+    const aggregations = await db.album.findAll({
+      attributes: [
+        "aid",
+        "title",
+        "year",
+        "hidden",
+        [sequelize.fn("COUNT", sequelize.col("pictures.aid")), "count"],
+      ],
+      include: {
+        model: db.picture,
+        attributes: [],
+      },
+      group: "album.aid",
+      order: [["title", "DESC"]],
+    });
+    console.log("aggregations", aggregations);
+    return aggregations;
+  });
+
   fastify.get("/getAlbum/:aid", async (request) => {
     const { aid } = request.params;
 
@@ -105,6 +126,19 @@ async function cpgRoutes(fastify, options) {
     return "OK";
   });
 
+  fastify.post("/renameAlbum", async (req) => {
+    const { aid, title } = await req.body;
+    console.log({ aid, title });
+    const count = await db.album.update({ title }, { where: { aid } });
+    return { count };
+  });
+  fastify.post("/hideAlbum", async (req) => {
+    const { aid, hidden } = await req.body;
+    console.log("Hidding", aid, hidden);
+    const count = await db.album.update({ hidden }, { where: { aid } });
+    return { count };
+  });
+
   fastify.post("/changePhotographer", async (req) => {
     const { ids, photographer } = await req.body;
     const count = await db.picture.update(
@@ -126,6 +160,21 @@ async function cpgRoutes(fastify, options) {
     );
     return { count };
   });
+  fastify.post("/deleteAlbum", async (req) => {
+    const { aid } = await req.body;
+    const album = await db.album.findByPk(aid);
+
+    const folder = `${galleryDataPath}/${album.directory}`;
+    const pics = jetpack.cwd(folder); // new jetpack context
+    const pictures = await db.picture.findAll({ where: { aid } });
+    const filter = pictures.map((p) => p.filename.replace(".", "*."));
+    console.log(folder, { filter });
+    const files = pics.find(".", { matching: filter });
+    console.log({ files });
+    files.forEach(pics.remove);
+    const count = await db.album.destroy({ where: { aid } });
+    return { count };
+  });
   fastify.post("/deletePictures", async (req) => {
     const { ids, aid } = await req.body;
     const album = await db.album.findByPk(aid);
@@ -138,7 +187,8 @@ async function cpgRoutes(fastify, options) {
     const files = pics.find(".", { matching: filter });
     console.log({ files });
     files.forEach(pics.remove);
-    return {};
+    const count = await db.picture.destroy({ where: { pid: ids } });
+    return { count };
   });
   fastify.post("/upload", async (req, reply) => {
     try {
@@ -197,7 +247,7 @@ async function cpgRoutes(fastify, options) {
       reply
         .code(200)
         .header("Content-Type", "text/plain; charset=utf-8")
-        .send(`${pid}`);
+        .send(`${album.aid}.${pid}`);
     } catch (error) {
       console.log(error);
       throw new Error(error);
