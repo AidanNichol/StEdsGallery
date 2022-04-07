@@ -42,7 +42,8 @@ exports.isOkForRole = function isOkForRole(request, role, alwaysReturn) {
   const authSeqMatch = request.headers.authseq === authseq;
   const hasRole = roles.includes(role) || roles.includes("admin");
   const OK = authSeqMatch && hasRole;
-  console.log(request.headers.authseq, roles, current, OK);
+  console.log(request.headers.authseq, authseq, roles, OK);
+  console.log(current);
   if (!OK && !alwaysReturn)
     throw Error(
       `not authorized for role: ${role}. ${
@@ -113,6 +114,7 @@ exports.authRoutes = async function authRoutes(fastify, options) {
     console.log("getAuth", auth);
     if (auth.state === 2) {
       authseq = authseq || uuidv4();
+      auth.authseq = authseq;
       delete auth.error;
       current.set(fingerprint, auth);
       console.log("setting authSeq", authseq);
