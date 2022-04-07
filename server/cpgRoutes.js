@@ -70,9 +70,10 @@ async function cpgRoutes(fastify, options) {
       include: {
         model: db.picture,
         attributes: [],
+        where: { hidden: 0 },
       },
       group: "album.aid",
-      where: { year: year },
+      where: { year: year, hidden: 0 },
       order: [["title", "DESC"]],
     });
     return aggregations;
@@ -103,7 +104,7 @@ async function cpgRoutes(fastify, options) {
     const { aid } = request.params;
 
     const album = db.album.findByPk(parseInt(aid), {
-      include: { model: db.picture },
+      include: { model: db.picture, where: { hidden: 0 } },
     });
 
     return album;
@@ -113,6 +114,7 @@ async function cpgRoutes(fastify, options) {
     const albums = await db.album.findAll({
       attributes: ["aid", "title"],
       order: [["title", "DESC"]],
+      where: { hidden: 0 },
       limit: 25,
     });
     return albums;
