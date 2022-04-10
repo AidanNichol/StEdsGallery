@@ -2,6 +2,7 @@ import ftp from "basic-ftp";
 import getenv from "getenv";
 import logUpdate from "log-update";
 import { requestRestart } from "./serverUtils.mjs";
+import jetpack from "fs-jetpack";
 
 example();
 
@@ -31,7 +32,12 @@ async function example() {
     console.log(await client.pwd());
     // await client.uploadFrom('database.sqlite', 'database.sqlite');
     // await client.uploadFrom(".env", ".env");
-    await client.uploadFrom("package.json", "package.json");
+    let pckg = jetpack.read("package.json");
+    delete pckg.devDependencies;
+    delete pckg.volta;
+    jetpack.write(pckg, temp.json);
+    await client.uploadFrom("temp.json", "package.json");
+
     await client.uploadFromDir("server", "server");
     // await client.uploadFromDir('models', 'models');
     // await client.rename('index.js', 'index0.js');
