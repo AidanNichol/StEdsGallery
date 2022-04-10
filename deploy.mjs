@@ -32,12 +32,13 @@ async function example() {
     console.log(await client.pwd());
     // await client.uploadFrom('database.sqlite', 'database.sqlite');
     // await client.uploadFrom(".env", ".env");
-    let pckg = jetpack.read("package.json");
+    let pckg = jetpack.read("package.json", "json");
+
     delete pckg.devDependencies;
     delete pckg.volta;
-    jetpack.write(pckg, temp.json);
+    jetpack.write("temp.json", pckg);
     await client.uploadFrom("temp.json", "package.json");
-
+    jetpack.remove("temp.json");
     await client.uploadFromDir("server", "server");
     // await client.uploadFromDir('models', 'models');
     // await client.rename('index.js', 'index0.js');
