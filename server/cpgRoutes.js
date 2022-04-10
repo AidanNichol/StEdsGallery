@@ -12,7 +12,7 @@ const { isOkForRole } = require("./authRoutes.js");
 const dateFn = require("date-fns");
 const jetpack = require("fs-jetpack");
 const { read, exists, write, cwd } = jetpack;
-const { format } = dateFn;
+const { format, parseISO } = dateFn;
 // const { Op } = sequelize;
 
 const isDev = (dev = true) => dev;
@@ -38,10 +38,16 @@ async function cpgRoutes(fastify, options) {
     // console.log("getPictures ", results, metadata);
     const pictures = await db.picture.findAll({
       order: [["aid", "DESC"]],
+      where: { hidden: 0 },
       limit: 30,
       // where: { album: { title: { startsWith: "20" } } },
 
-      include: { model: db.album, attributes: ["title", "directory"] },
+      include: {
+        model: db.album,
+        where: { hidden: 0 },
+        required: true,
+        attributes: ["title", "directory", "hidden"],
+      },
     });
     // console.log("getPictures pictures", pictures);
     return pictures;
@@ -109,6 +115,15 @@ async function cpgRoutes(fastify, options) {
 
     return album;
   });
+  fastify.get("/getAlbumAll/:aid", async (request) => {
+    const { aid } = request.params;
+
+    const album = db.album.findByPk(parseInt(aid), {
+      include: { model: db.picture },
+    });
+
+    return album;
+  });
 
   fastify.get("/getLatestAlbums", async () => {
     const albums = await db.album.findAll({
@@ -149,9 +164,9 @@ async function cpgRoutes(fastify, options) {
     );
     return { count };
   });
-  fastify.post("/changeTitle", async (req) => {
-    const { ids, title } = await req.body;
-    const count = await db.picture.update({ title }, { where: { pid: ids } });
+  fastify.post("/changeCaption", async (req) => {
+    const { ids, caption } = await req.body;
+    const count = await db.picture.update({ caption }, { where: { pid: ids } });
     return { count };
   });
   fastify.post("/changeHidden", async (req) => {
@@ -202,6 +217,12 @@ async function cpgRoutes(fastify, options) {
       const buff = await req.body.photos[1].toBuffer();
       const filename = await req.body.photos[1].filename;
       const title = await req.body.albumTitle.value;
+      const badDate =
+        parseISO(title.substr(0, 10)).toString() === "Invalid Date";
+      if (badDate) {
+        throw Error("Invalid Album Title - must start with a valid date.");
+      }
+
       const photographer = await req.body.photographer.value;
       const temp = `temp/_${filename}`;
       write(temp, buff);
