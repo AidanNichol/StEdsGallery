@@ -154,7 +154,7 @@ exports.authRoutes = async function authRoutes(fastify, options) {
         name: "Peter Reed",
         mobile: "07761064556",
         email: "pr2@blueyonder.co.uk",
-        roles: "committee,tester,uploader",
+        roles: "committee,tester,uploader,admin",
       },
     ];
     for (const value of authUsers) {
