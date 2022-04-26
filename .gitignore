@@ -8,3 +8,4 @@ server/prog*.js
 server/data/user-M1049.json
 temp.txt
 setup/test*
+deployLastRun.txt
