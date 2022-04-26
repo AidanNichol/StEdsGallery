@@ -67,6 +67,7 @@ async function uploadNewer(client, { children, relativePath }) {
   for (const item of children) {
     if (item.type === "dir") await uploadNewer(client, item);
     if (item.type === "file") {
+      if (/user-M/.test(item.name)) continue;
       const file = item.relativePath;
       if (lastRun < item.modifyTime) {
         // console.log("     upload:", file);
