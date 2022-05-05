@@ -1,6 +1,6 @@
 {
   "name": "steds-gallery",
-  "version": "1.0.30-0",
+  "version": "1.0.29-0",
   "main": "index.js",
   "license": "MIT",
   "nodemonConfig": {
