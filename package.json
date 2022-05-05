@@ -1,6 +1,6 @@
 {
   "name": "steds-gallery",
-  "version": "1.0.29-1",
+  "version": "1.0.29-2",
   "main": "index.js",
   "license": "MIT",
   "nodemonConfig": {
@@ -21,6 +21,7 @@
     "moveFiles": "clear&&node prisma/moveFiles.mjs --trace-warnings ",
     "generate": "npx prisma generate",
     "server": "clear&&yarn nodemon -r dotenv/config ./server/index.js",
+    "setPrerelease": " pnpm version prerelease -f ",
     "deploy": "clear&& pnpm version patch && node -r dotenv/config ./deploy.mjs",
     "uploadGalleryDB": "clear&& node -r dotenv/config ./uploadGalleryDB.mjs",
     "downloadGalleryDB": "clear&& node -r dotenv/config ./downloadGalleryDB.mjs"
