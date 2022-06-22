@@ -4,6 +4,8 @@ import logUpdate from "log-update";
 import { requestRestart } from "./serverUtils.mjs";
 import jetpack from "fs-jetpack";
 import dotenv from "dotenv";
+import _ from "lodash";
+import fetch from "node-fetch";
 dotenv.config();
 let lastRun;
 
@@ -11,10 +13,36 @@ example();
 
 async function example() {
   const now = new Date();
-  const deployLastRun = jetpack.read("./deployLastRun.txt");
-  lastRun = new Date(deployLastRun);
-  // console.log("lastRun", lastRun);
+  let tree;
+  let deployLastData = jetpack.read("./deployLastData.json", "json");
+  // deployLastData = {}; // force full upload
+  await serverVersion("start");
   const client = new ftp.Client();
+  const isNewer = (curData) => {
+    const path = curData.relativePath.split("/").filter((p) => p !== ".");
+    let oldData = deployLastData;
+    for (const p of path) {
+      oldData = oldData[p];
+      if (!oldData) return true;
+    }
+    if (curData.sha512 !== oldData.sha512) return true;
+    return false;
+  };
+  const uploadNewer = async (tree) => {
+    // console.log("uploadNewer", relativePath);
+    for (const [key, data] of _.entries(tree)) {
+      if (key === "type") continue;
+      if (data.type === "dir") await uploadNewer(data);
+      else {
+        if (isNewer(data)) {
+          const file = jetpack.path(`server`, data.relativePath);
+          console.log("     upload:", file);
+          await client.uploadFrom(file, data.relativePath);
+        }
+      }
+    }
+  };
+
   let last = "";
   client.trackProgress((info) => {
     if (last !== info.name) {
@@ -31,13 +59,12 @@ async function example() {
       host: "ftp.stedwardsfellwalkers.co.uk",
       user: "vscode@stedwardsfellwalkers.co.uk",
       password: getenv("FTPPASSWORD"),
-      secure: true,
+      secure: "explicit",
       port: 21,
-      secureOptions: { servername: "ukhost4u.com" },
+      // secureOptions: { servername: "ukhost4u.com" },
     });
     await client.ensureDir("/apiServer");
     console.log(await client.pwd());
-    // await client.uploadFrom('database.sqlite', 'database.sqlite');
     // await client.uploadFrom(".env", ".env");
     let pckg = jetpack.read("package.json", "json");
 
@@ -46,15 +73,24 @@ async function example() {
     jetpack.write("temp.json", pckg);
     await client.uploadFrom("temp.json", "package.json");
     jetpack.remove("temp.json");
-    const tree = jetpack.inspectTree("server", {
+    tree = jetpack.inspectTree("server", {
       times: true,
       relativePath: true,
+      checksum: "sha512",
     });
-    await uploadNewer(client, tree);
-    // await client.uploadFromDir("server", "server");
+    // tree = {server:preprocessTree(tree)};
+    tree = preprocessTree(tree);
+    await client.ensureDir("/apiServer/server");
+    console.log(await client.pwd());
+
+    await uploadNewer(tree);
+    // // await client.uploadFromDir("server", "server");
     await requestRestart(client);
+    console.log("restart requested");
+    await serverVersion("end");
+
     console.log("deploy completed");
-    jetpack.write("./deployLastRun.txt", now.toString());
+    jetpack.write("./deployLastData.json", tree);
     // console.log(await client.list());
   } catch (err) {
     console.log(err);
@@ -62,17 +98,27 @@ async function example() {
 
   client.close();
 }
-async function uploadNewer(client, { children, relativePath }) {
-  // console.log("uploadNewer", relativePath);
-  for (const item of children) {
-    if (item.type === "dir") await uploadNewer(client, item);
+function preprocessTree(tree) {
+  let newTree = { type: "dir" };
+  for (const item of tree.children) {
+    if (item.type === "dir") {
+      if (/^(gallery|data|temp)$/.test(item.name)) continue;
+      newTree[item.name] = preprocessTree(item);
+      continue;
+    }
     if (item.type === "file") {
-      if (/user-M/.test(item.name)) continue;
-      const file = item.relativePath;
-      if (lastRun < item.modifyTime) {
-        // console.log("     upload:", file);
-        await client.uploadFrom(jetpack.path(`server`, file), file);
-      }
+      if (/user-M|\.DS_Store/.test(item.name)) continue;
+      newTree[item.name] = _.pick(item, [
+        "modifyTime",
+        "relativePath",
+        "sha512",
+      ]);
     }
   }
+  return newTree;
+}
+async function serverVersion(when) {
+  let resp = await fetch("https://stedwardsfellwalkers.co.uk/apiServer/walks");
+  let server = await resp.json();
+  console.log(`Server version - ${when}:`, server.version);
 }

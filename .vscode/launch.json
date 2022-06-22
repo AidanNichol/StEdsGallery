@@ -14,6 +14,15 @@
     {
       "type": "pwa-node",
       "request": "launch",
+      "name": "deploy",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/deploy.mjs",
+      "envFile": "${workspaceFolder}/.env",
+      "preLaunchTask": { "scrip": "setPrerelease", "type": "npm" }
+    },
+    {
+      "type": "pwa-node",
+      "request": "launch",
       "name": "seedP",
       "skipFiles": ["<node_internals>/**"],
       "program": "${workspaceFolder}/prisma/seedP.mjs"
