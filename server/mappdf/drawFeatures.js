@@ -1,16 +1,16 @@
-const { O_DSYNC } = require('constants');
-const jetpack = require('fs-jetPack');
-const { size } = require('lodash');
-const _ = require('lodash');
+const { O_DSYNC } = require("constants");
+const jetpack = require("fs-jetPack");
+const { size } = require("lodash");
+const _ = require("lodash");
 // const { deLetterMapCoords } = require("./Os_Coords");
 
 function drawFeatures(doc, m) {
   doc.saveGraphicsState(); // pdf.internal.write('q');
   const blackDot = (doc, m, x, y, fill, r = 1) => {
     if (m.px(x) > 1000) {
-      console.log('feat dot', m.px(x), m.py(y));
+      console.log("feat dot", m.px(x), m.py(y));
     }
-    doc.setFillColor(...fill).circle(m.px(x), m.py(y), r, 'F');
+    doc.setFillColor(...fill).circle(m.px(x), m.py(y), r, "F");
   };
 
   // draw clipping objects
@@ -40,25 +40,29 @@ function drawFeatures(doc, m) {
       let { x2, y2 } = feature;
       let unitWidth = doc.getStringUnitWidth(text);
       let fs = ((len / 0.3527777778) * m.scale) / unitWidth;
-      fs = Math.min(12, Math.max(6, fs));
-      let color = stroke.map(c => c * 0.7);
+      fs = Math.min(8, Math.max(6, fs));
+      let color = stroke.map((c) => c * 0.7);
       if (/F[\d.]+/i.test(style)) fs = parseInt(style.match(/F([\d.]+)/i)[1]);
-      if (/A[\d.-]+/i.test(style)) angle = parseInt(style.match(/A([\d.-]+)/i)[1]);
+      if (/A[\d.-]+/i.test(style))
+        angle = parseInt(style.match(/A([\d.-]+)/i)[1]);
 
       if (/R/i.test(style)) {
         angle = (180 + angle) % 360;
         // let angle = (rad * 180) / Math.PI;
         let rad = (Math.PI * angle) / 180;
-        let size = unitWidth * fs * 0.3527777778 / m.scale;
+        let size = (unitWidth * fs * 0.3527777778) / m.scale;
         let dy = Math.sin(rad) * size;
         let dx = Math.cos(rad) * size;
         y -= Math.sin(rad) * size;
         x -= Math.cos(rad) * size;
       }
-      if (type === 'point') blackDot(doc, m, x, y, color);
-      doc.setFont('helvetica', 'normal').setFontSize(fs).setTextColor(...color);
+      if (type === "point") blackDot(doc, m, x, y, color);
+      doc
+        .setFont("helvetica", "normal")
+        .setFontSize(fs)
+        .setTextColor(...color);
 
-      doc.text(` ${text}`, m.px(x), m.py(y), { align: 'left', angle });
+      doc.text(` ${text}`, m.px(x), m.py(y), { align: "left", angle });
     }
   }
   // draw objects that need to be clipped
@@ -68,8 +72,11 @@ function drawFeatures(doc, m) {
 }
 const getPath = (type, wps, m) => {
   if (!/area|line|fill/i.test(type)) return null;
-  let path = wps.reduce((pth, wp) => (pth = [...pth, { op: 'l', c: [m.px(wp.x), m.py(wp.y)] }]), []);
-  path[0].op = 'm';
+  let path = wps.reduce(
+    (pth, wp) => (pth = [...pth, { op: "l", c: [m.px(wp.x), m.py(wp.y)] }]),
+    []
+  );
+  path[0].op = "m";
   return path;
 };
 module.exports = { drawFeatures };

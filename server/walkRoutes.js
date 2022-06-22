@@ -6,6 +6,7 @@ const { Op } = require("sequelize");
 const jetpack = require("fs-jetpack");
 const getenv = require("getenv");
 const Jimp = require("jimp");
+const _ = require("lodash");
 
 const { uploadWalk, updateWalkWithRemoteData } = require("./uploadWalk");
 const { default: fastify } = require("fastify");
@@ -33,12 +34,17 @@ async function walkRoutes(fastify, options) {
     let { walkNo } = request.params;
     let walkData = await db.walk.findByPk(walkNo, { include: [db.region] });
     walkData = walkData.get({ plain: true });
+    console.log(
+      "createMap =============> data",
+      walkNo,
+      _.pick(walkData, ["showSegNames", "legend"])
+    );
     const [map, orientation, mapData] = await createMapPdf(walkNo, walkData);
     console.log("Map", { map, orientation });
     const changes = { orientation, scaledPrf: "Y" };
     await db.walk.update(changes, { where: { date: walkNo } });
     walkData = { ...walkData, ...changes };
-    return { img: map, map: mapData };
+    return { img: map, map: mapData, walkData };
   });
 
   fastify.get("/getYearsData/:year", async (request) => {
@@ -51,9 +57,6 @@ async function walkRoutes(fastify, options) {
 
     let now = format(new Date(), "yyyy-MM-dd");
     const thisYear = now.substr(0, 4);
-    if (thisYear === year) {
-      year = now;
-    }
 
     const hiWalk = await getNextWalkData(thisYear === year ? now : year);
     const progPDF =
@@ -133,6 +136,11 @@ async function walkRoutes(fastify, options) {
       console.log("not found", `${WALKDATA}/${img}`);
       img = `walkdata/mapnotavailable.pdf`;
     }
+    let features = [];
+    let featuresFile = `${WALKDATA}/${base}/featuresList.json`;
+    // if (jetpack.exists(featuresFile) === "file") {
+    features = jetpack.read(featuresFile, "json") || [];
+    // }
     // details = { ...details, img };
     routes = routes.map((rt) => {
       rt = rt.get({ plain: true });
@@ -156,13 +164,38 @@ async function walkRoutes(fastify, options) {
       gpxJ = data ? JSON.parse(data) : [];
     }
     details.img = img;
-    return { details, routes, gpxJ, img };
+    return { details, routes, gpxJ, img, features };
   });
 
+  fastify.get("/resetFeatures/:dat", async (request) => {
+    const { dat } = request.params;
+    const base = `${dat.substr(0, 4)}/${dat}`;
+
+    let featuresFile = `${WALKDATA}/${base}/featuresList.json`;
+    jetpack.remove(featuresFile);
+    return { res: "ok" };
+  });
+  fastify.post("/updateFeatures/:dat", async (request) => {
+    const { dat } = request.params;
+    const body = JSON.parse(request.body);
+    const base = `${dat.substr(0, 4)}/${dat}`;
+
+    let featuresFile = `${WALKDATA}/${base}/featuresList.json`;
+    jetpack.write(featuresFile, body);
+    return { res: "ok" };
+  });
   fastify.post("/updateWalkDetails/:walkNo", async (request) => {
     const { walkNo } = request.params;
     const body = JSON.parse(request.body);
     const res = await db.walk.update(body, { where: { date: walkNo } });
+    console.log("updatedWalk =============> ", walkNo, body);
+    let data = await db.walk.findByPk(walkNo);
+    data = data.get({ plain: true });
+    console.log(
+      "updatedWalk =============> data",
+      walkNo,
+      _.pick(data, ["showSegNames", "legend"])
+    );
     return { res: "ok" };
   });
   fastify.post("/addRoute/:walkNo/:no", async (request) => {

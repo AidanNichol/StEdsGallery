@@ -1,34 +1,39 @@
-const jetpack = require('fs-jetPack');
-const _ = require('lodash');
-const { deLetterMapCoords } = require('./Os_Coords');
-const { namedColors } = require('./namedColors');
-const { toLower, every } = require('lodash');
+const jetpack = require("fs-jetPack");
+const _ = require("lodash");
+const { deLetterMapCoords } = require("./Os_Coords");
+const { namedColors } = require("./namedColors");
+const { toLower, every } = require("lodash");
 let features = [];
 function extractFeatures(obj) {
-  features = [];
-  let ext, wps = obj.wp;
-  wps = wps.map(pt => ({ ...pt, ...deLetterMapCoords(pt.pos) }));
-  let Xs = wps.map(pt => pt.x);
-  let Ys = wps.map(pt => pt.y);
-  let minX = _.min(Xs);
-  let minY = _.min(Ys);
-  let maxX = _.max(Xs);
-  let maxY = _.max(Ys);
-  ['color', 'fill', 'area', 'line', 'name', 'point'].forEach((type) => {
-    do {
-      [ext, wps] = findFeature(wps, type);
-    } while (ext);
-  });
-  //
-  // console.log(features)
-  // features = _.sortBy(features, 'type')
-  return { area: { minX, minY, maxX, maxY }, features };
+  try {
+    features = [];
+    let ext,
+      wps = obj.wp;
+    wps = wps.map((pt) => ({ ...pt, ...deLetterMapCoords(pt.pos) }));
+    let Xs = wps.map((pt) => pt.x);
+    let Ys = wps.map((pt) => pt.y);
+    let minX = _.min(Xs);
+    let minY = _.min(Ys);
+    let maxX = _.max(Xs);
+    let maxY = _.max(Ys);
+    ["color", "fill", "area", "line", "name", "point"].forEach((type) => {
+      do {
+        [ext, wps] = findFeature(wps, type);
+      } while (ext);
+    });
+    //
+    // console.log(features)
+    // features = _.sortBy(features, 'type')
+    return { area: { minX, minY, maxX, maxY }, features };
+  } catch (error) {
+    console.log(error);
+  }
 }
 const findEnd = (wp, i, fn) => {
   let end = _.findIndex(wp, fn, i + 1);
   if (end >= 0) return end - i + 1;
   let fn2 = (p) => !/^WP\d*/i.test(p.name);
-  console.log('End not found', wp[i].name);
+  console.log("End not found", wp[i].name);
   end = _.findIndex(wp, fn2, i + 1);
   if (end >= 0) return end - i;
   return wp.length - i - 1;
@@ -40,7 +45,7 @@ const getBearing = (wp, i) => {
 };
 let localColors = {};
 const getColor = (wp, i, klass, text) => {
-  let [, name, namedColor] = wp[i].name.split(' ');
+  let [, name, namedColor] = wp[i].name.split(" ");
   localColors[name.toLowerCase()] = namedColor;
   return 1;
 };
@@ -57,7 +62,7 @@ const featCount = {
   point: getBearing,
 };
 const findFeature = (wp, type) => {
-  let re = new RegExp(`^${type}`, 'i');
+  let re = new RegExp(`^${type}`, "i");
   let i = _.findIndex(wp, (p) => re.test(p.name));
   if (i < 0) return [null, wp];
   // let parts=wp[i].name.split(/ +/);
@@ -67,12 +72,15 @@ const findFeature = (wp, type) => {
   // name water p8 a name
   // line water w2
   // area water
-  let [, klass, style, text] = wp[i].name.match(/^\w+\s+(\w+)(?:\s+([RFWAS\d.]+))?(?:\s+(.*))?$/i);
+  let [, klass, style, text] = wp[i].name.match(
+    /^\w+\s+(\w+)(?:\s+([RFWAS\d.]+))?(?:\s+(.*))?$/i
+  );
+  console.log("feature", type, klass, style, text);
   klass = klass.toLowerCase();
   let del = featCount[type](wp, i, klass, text);
   let colors = getColors(type, _.toLower(klass));
   let pts = wp.splice(i, del);
-  pts = pts.map(pt => _.pick(pt, ['x', 'y', 'name']));
+  pts = pts.map((pt) => _.pick(pt, ["x", "y", "name"]));
   // pts = pts.map((pt) => getXY(pt))
   let text2 = /^point|name/i.test(type) ? getText(type, pts[0], wp[i]) : {};
   // let path = getPath(type, wps, m);
@@ -80,7 +88,7 @@ const findFeature = (wp, type) => {
   let feature2;
   let extLine = extractLineFromArea(pts);
   if (extLine) {
-    feature2 = { type: 'line', pts: extLine, stroke: colors.stroke };
+    feature2 = { type: "line", pts: extLine, stroke: colors.stroke };
     delete feature.stroke;
   }
   features.push(feature);
@@ -92,10 +100,10 @@ const getXY = (pt) => {
   return { x, y, name: pt.name };
 };
 const extractLineFromArea = (pts) => {
-  let i = _.findIndex(pts, p => /WP.*!$/i.test(p.name));
+  let i = _.findIndex(pts, (p) => /WP.*!$/i.test(p.name));
   if (i < 0) return null;
   let start = _.slice(pts, 0, i);
-  let j = _.findIndex(pts, p => !/WP.*!$/i.test(p.name), i + 1);
+  let j = _.findIndex(pts, (p) => !/WP.*!$/i.test(p.name), i + 1);
   let end = j >= 0 ? _.slice(pts, j) : [];
   return [...end, ...start];
 };
@@ -114,7 +122,8 @@ const strokeColor = {
   broad: [164, 42, 42],
   hill: [206, 132, 64],
   place: [75, 0, 130],
-  town: [75, 0, 130],
+  town: [218, 165, 32],
+  // town: [75, 0, 130],
   water: [178, 202, 246],
 };
 const fillColor = {};
@@ -122,20 +131,23 @@ const fillColor = {};
 function getColors(type, mode) {
   if (/color/i.test(type)) return {};
   let fill = null;
-  let stroke = named2rgb(localColors[mode]) || hex2rgb(mode) || strokeColor[mode] || named2rgb(mode) || [0, 0, 0];
+  let stroke = named2rgb(localColors[mode]) ||
+    hex2rgb(mode) ||
+    strokeColor[mode] ||
+    named2rgb(mode) || [0, 0, 0];
   if (/^(area|fill)$/i.test(type)) {
     fill = fillColor[mode];
     if (!fill) {
       fill = stroke.map((c) => c + (255 - c) * 0.5);
     }
-    if (type === 'fill') stroke = undefined;
+    if (type === "fill") stroke = undefined;
   }
   return { stroke, fill };
 }
 function named2rgb(name) {
   let hex = namedColors[name];
   if (!hex) {
-    console.log('unknown color name', name);
+    console.log("unknown color name", name);
     return null;
   }
   return hex2rgb(hex);

@@ -27,7 +27,7 @@ async function uploadWalk(walkNo) {
       return data;
     })
     .catch((error) => {
-      console.error(error);
+      console.error("updateWalkWithRemoteData error", error);
       return error;
     });
 }
@@ -50,23 +50,30 @@ async function uploadfiles(walkNo) {
   // });
   // client.ftp.verbose = true;
   try {
+    console.log("connecting to ftp server");
     await client.access({
       host: "ftp.stedwardsfellwalkers.co.uk",
+      // host: "orange.ukhost4u.com",
       user: "vscode@stedwardsfellwalkers.co.uk",
       password: getenv("FTPPASSWORD"),
-      secure: true,
+      secure: "explicit",
       port: 21,
-      secureOptions: { servername: "ukhost4u.com" },
+      secureOptions: {
+        // servername: "orange.ukhost4u.com",
+        // rejectUnauthorized: false,
+      },
     });
+    console.log("set up dir", `/public_html/walkdata/${walkdir}`);
     await client.ensureDir(`/public_html/walkdata/${walkdir}`);
-    // console.log(await client.pwd());
-    // const list = await client.list("*.*");
+    console.log(await client.pwd());
+    const list = await client.list("*.*");
     // // console.log("list", list);
     let tree = jetpack.inspectTree(libdir, { times: true }).children;
     let files = tree.filter((f) => /(.jpg|.pdf|.json|.gpx|.mmo)$/.test(f.name));
     let uList = [];
     for (const f of files) {
       let { name, size } = f;
+      console.log(`uploading ${name}  ${formatFileSize(size)}`);
       let res = await client.uploadFrom(`${libdir}/${name}`, name);
       console.log(`uploaded ${name}  ${formatFileSize(size)}`);
       uList.push({ name, size });
