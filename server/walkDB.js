@@ -1,3 +1,5 @@
+const dotenv = require("dotenv");
+dotenv.config();
 const Sequelize = require("sequelize");
 const { DataTypes } = require("sequelize");
 const getenv = require("getenv");

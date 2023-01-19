@@ -28,7 +28,7 @@
       "program": "${workspaceFolder}/prisma/seedP.mjs"
     },
     {
-      "type": "pwa-node",
+      "type": "node",
       "request": "launch",
       "name": "server",
       "skipFiles": ["<node_internals>/**"],

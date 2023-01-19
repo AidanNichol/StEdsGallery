@@ -10,3 +10,5 @@ temp.txt
 setup/test*
 deployLastRun.txt
 deployLastData.json
+server/downloads/StEdsNewMemberInfo-2022-Sept.pdf
+server/env

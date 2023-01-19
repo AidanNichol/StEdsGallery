@@ -8,13 +8,13 @@ const fastifyStatic = require("fastify-static");
 const multipart = require("fastify-multipart");
 const { stdTimeFunctions } = require("pino");
 
-const path = require("path");
+// const path = require("path");
 const jetpack = require("fs-jetpack");
 const getenv = require("getenv");
 const http = require("http");
 const packageJson = require("../package.json");
 const version = packageJson.version;
-const { cwd, read } = jetpack;
+// const { cwd, read } = jetpack;
 
 const { cpgRoutes } = require("./cpgRoutes.js");
 const { authRoutes } = require("./authRoutes.js");
@@ -22,7 +22,7 @@ const { walkRoutes } = require("./walkRoutes.js");
 const { eventRoutes } = require("./eventRoutes.js");
 const galleryDataPath = process.env.GALLERY_DATA;
 console.log("galleryData", galleryDataPath);
-const fs = require("fs");
+// const fs = require("fs");
 const walkDataPath = process.env.WALK_DATA;
 console.log("walkdata", walkDataPath);
 const downloadsDataPath = process.env.DOWNLOADS_DATA;
@@ -30,7 +30,7 @@ console.log("downloadsdata", downloadsDataPath);
 const sitePrefix = getenv("SITE_PREFIX", "apiServer/");
 console.log("sitePrefix", sitePrefix);
 console.log("cwd", jetpack.cwd());
-const serverFactory = (handler, opts) => {
+const serverFactory = (handler) => {
   const server = http.createServer((req, res) => {
     handler(req, res);
   });
@@ -38,14 +38,14 @@ const serverFactory = (handler, opts) => {
   return server;
 };
 
-const https = getenv.bool("DEVELOPMENT")
-  ? {
-      https: {
-        key: read("./server.key"),
-        cert: read("./server.crt"),
-      },
-    }
-  : {};
+// const https = getenv.bool("DEVELOPMENT")
+//   ? {
+//       https: {
+//         key: read("./server.key"),
+//         cert: read("./server.crt"),
+//       },
+//     }
+//   : {};
 jetpack.dir("../logs");
 const fastify = fastifyPkg({
   serverFactory,
@@ -55,6 +55,7 @@ const fastify = fastifyPkg({
     timestamp: stdTimeFunctions.isoTime,
   },
 });
+
 fastify.register(fastifyCookie, {
   secret: getenv("COOKIE_SECRET"), // for cookies signature
   parseOptions: {}, // options for parsing cookies
@@ -93,7 +94,7 @@ console.log(`static ${`/${sitePrefix}downloads`} ==> ${downloadsDataPath}`);
 //   credentials: true,
 //   origin: [/localhost/, /stedwardsfellwalkers\.co\.uk$/],
 // });
-fastify.get(`/${sitePrefix}`, async (request, reply) => {
+fastify.get(`/${sitePrefix}`, async () => {
   return {
     hello: "world",
     version: process.versions.node,
@@ -113,8 +114,10 @@ const runit = async () => {
     fastify.log.error(err);
     process.exit(1);
   }
+  console.log(fastify.printRoutes({ commonPrefix: false }));
   console.log(
     `Server (v${version}) listening on ${fastify.server.address().port}`
   );
 };
 runit();
+module.exports = fastify;
