@@ -5,9 +5,11 @@ const jetpack = require("fs-jetpack");
 const _ = require("lodash");
 const db = require("./walkDB");
 
-async function uploadWalk(walkNo) {
-  await uploadfiles(walkNo);
-  await db.walk.update({ details: "Y" }, { where: { date: walkNo } });
+async function uploadWalk(walkNo, create = false) {
+  if (!create) {
+    await uploadfiles(walkNo);
+    await db.walk.update({ details: "Y" }, { where: { date: walkNo } });
+  }
   const currData = await db.walk.findByPk(walkNo, {
     include: [db.route],
   });
@@ -110,14 +112,14 @@ async function updateWalkWithRemoteData(walkNo, body, log) {
   const currData = await db.walk.findByPk(walkNo, {
     include: [db.route],
   });
-  if (!currData) {
-    console.log("creating " + walkNo + " " + JSON.stringify(walk));
-    log.info("creating " + walkNo + " " + JSON.stringify(walk));
-    await db.walk.create(walk);
-  } else {
+  if (currData) {
     console.log("updating " + walkNo + " " + JSON.stringify(walk));
     log.info("updating " + walkNo + " " + JSON.stringify(walk));
     await db.walk.update(walk, { where: { date: walkNo } });
+  } else {
+    console.log("creating " + walkNo + " " + JSON.stringify(walk));
+    log.info("creating " + walkNo + " " + JSON.stringify(walk));
+    await db.walk.create(walk);
   }
   for (const route of routes) {
     const no = route.no;

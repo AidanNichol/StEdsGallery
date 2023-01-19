@@ -1,7 +1,7 @@
 const blackDot = (doc, m, x, y) =>
   doc.setFillColor(0).circle(m.px(x), m.py(y), 0.5, "F");
-const redDot = (doc, m, x, y, dx = 0, dy = 0) =>
-  doc.setFillColor(255, 0, 0).circle(m.px(x, dx), m.py(y, dy), 0.5, "F");
+// const redDot = (doc, m, x, y, dx = 0, dy = 0) =>
+//   doc.setFillColor(255, 0, 0).circle(m.px(x, dx), m.py(y, dy), 0.5, "F");
 function decorateRoutes(doc, m) {
   for (const pt of m.segPoints) {
     const s = 2;
@@ -46,22 +46,33 @@ function drawNames(doc, m) {
       angle = parseInt(match[1]);
     }
     if (pt.start || pt.end) {
-      if (/[RC]/.test(pt.shift)) size += ftHt / 2;
-      else size = ftHt / 2;
-      if (/C/.test(pt.shift)) size += sizeftHt / 2;
+      if (/[RC]/.test(pt.shift)) {
+        size += ftHt / 2;
+      } else {
+        size = ftHt / 2;
+      }
+      if (/C/.test(pt.shift)) {
+        size += sizeftHt / 2;
+      }
     } else {
-      if (!/[RC]/.test(pt.shift)) size = 0;
+      if (!/[RC]/.test(pt.shift)) {
+        size = 0;
+      }
     }
     // let angle = (rad * 180) / Math.PI;
     let rad = (angle * Math.PI) / 180;
     let opts = { align: "left", angle };
     let opp = Math.sin(rad) * size;
     let adj = Math.cos(rad) * size;
-    let dx = 0,
-      dy = 0,
-      ddy = 0.3;
-    if (/T/.test(pt.shift)) ddy = 0.9;
-    if (/B/.test(pt.shift)) ddy = -0.1;
+    let dx = 0;
+    let dy = 0;
+    let ddy = 0.3;
+    if (/T/.test(pt.shift)) {
+      ddy = 0.9;
+    }
+    if (/B/.test(pt.shift)) {
+      ddy = -0.1;
+    }
     ddy *= ftHt;
     let adj2 = ddy * Math.sin(rad);
     let opp2 = ddy * Math.cos(rad);
@@ -76,8 +87,12 @@ function drawNames(doc, m) {
     //   if (  /R/.test(pt.shift)) dx -= ftHt/2;
     //   else if ( ! /C/.test(pt.shift)) dx += ftHt/2;
     // }
-    if (/X/.test(pt.shift)) dx += parseInt(pt.shift.match(/X([-\d]+)/)[1]);
-    if (/Y/.test(pt.shift)) dy += parseInt(pt.shift.match(/Y([-\d]+)/)[1]);
+    if (/X/.test(pt.shift)) {
+      dx += parseFloat(pt.shift.match(/X([+-.\d]+)/)[1]);
+    }
+    if (/Y/.test(pt.shift)) {
+      dy += parseFloat(pt.shift.match(/Y([+-.\d]+)/)[1]);
+    }
     // console.log(name, pt.shift, opts, pt, dx, dy);
     // doc.setFillColor(200).rect(m.px(pt.x, dx), m.py(pt.y, -ftHt+dy), adj, ftHt, 'F')
     blackDot(doc, m, pt.x, pt.y);
