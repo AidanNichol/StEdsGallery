@@ -3,7 +3,30 @@ const _ = require("lodash");
 const { deLetterMapCoords } = require("./Os_Coords");
 const { namedColors } = require("./namedColors");
 const { toLower, every } = require("lodash");
+const { TEXT } = require("sequelize");
 let features = [];
+const getStyle = (what, def = 0) => {
+	const regex = new RegExp(`${what}([+-]?[\\d.]+)`, "i");
+	return (style = "", ovr) => {
+		const match = style.match(regex);
+		return match?.[1] ? parseFloat(match[1]) : ovr ?? def;
+	};
+};
+
+const getStyleP = getStyle("P", 1);
+const getStyleF = getStyle("F", null);
+
+const featCount = {
+	color: () => 1,
+	rect: () => 2,
+	text: () => 2,
+	name: () => 2,
+	line: (wp, i) => findEnd(wp, i, (p) => /^end/i.test(p.name)),
+	area: (wp, i) => findEnd(wp, i, (p) => p.pos === wp[i].pos),
+	fill: (wp, i) => findEnd(wp, i, (p) => p.pos === wp[i].pos),
+	point: () => 2,
+	circle: () => 2,
+};
 function extractFeatures(obj) {
 	try {
 		features = [];
@@ -16,13 +39,26 @@ function extractFeatures(obj) {
 		let minY = _.min(Ys);
 		let maxX = _.max(Xs);
 		let maxY = _.max(Ys);
-		["color", "fill", "area", "rect", "line", "text", "name", "point"].forEach(
-			(type) => {
-				do {
-					[ext, wps] = findFeature(wps, type);
-				} while (ext);
-			},
-		);
+		[
+			"color",
+			"fill",
+			"area",
+			"rect",
+			"line",
+			"text",
+			"name",
+			"point",
+			"circle",
+		].forEach((type) => {
+			let re = new RegExp(`^${type}`, "i");
+			const findType = (from) => _.findIndex(wps, (p) => re.test(p.name), from);
+			let used = 0;
+			for (let i = findType(0); i > -1; i = findType(i + used)) {
+				used = featCount[type](wps, i);
+				let pts = wps.slice(i, i + used);
+				findFeature(pts, type);
+			}
+		});
 		//
 		// console.log(features)
 		// features = _.sortBy(features, 'type')
@@ -40,93 +76,66 @@ const findEnd = (wp, i, fn) => {
 	if (end >= 0) return end - i;
 	return wp.length - i - 1;
 };
-const getBearing = (wp, i) => {
-	wp[i].dist = wp[i + 1].dist;
-	wp[i].bear = wp[i + 1].bear;
-	return 1;
-};
+
 let localColors = {};
-const getRect = (wp, i) => {
-	wp[i].wd = wd[i + 1].x - wd[i].x;
-	wp[i].ht = wd[i + 1].y - wd[i].y;
-	return 1;
-};
-const getColor = (wp, i, klass, text) => {
-	let [, name, namedColor] = wp[i].name.split(" ");
-	localColors[name.toLowerCase()] = namedColor;
-	return 1;
-};
+
 const getTextBlock = (wp, i, klass, text) => {
 	let [, name, namedColor] = wp[i].name.split(" ");
 	localColors[name.toLowerCase()] = namedColor;
 	return 1;
 };
-const featCount = {
-	// color: getColor,
-	color: (wp, i, klass, text) => {
-		localColors[klass] = text;
-		return 1;
-	},
-	rect: () => 2,
-	text: () => 1,
-	name: getBearing,
-	line: (wp, i) => findEnd(wp, i, (p) => /^end/i.test(p.name)),
-	area: (wp, i) => findEnd(wp, i, (p) => p.pos === wp[i].pos),
-	fill: (wp, i) => findEnd(wp, i, (p) => p.pos === wp[i].pos),
-	point: getBearing,
-};
-const findFeature = (wps, type) => {
-	let re = new RegExp(`^${type}`, "i");
-	let i = _.findIndex(wps, (p) => re.test(p.name));
-	if (i < 0) return [null, wps];
-	// let parts=wp[i].name.split(/ +/);
-	// if (parts[2] && /^[RFWAS\d.]+/.test(parts[2]))
-
+const findFeature = (pts, type) => {
 	// name water what every
 	// name water p8 a name
 	// line water w2
 	// area water
-	let [, klass, style, text] = wps[i].name.match(
-		/^\w+\s+(\w+)(?:\s+([RFWAS\d.]+))?(?:\s+(.*))?$/i,
+	let [, klass, style, text] = pts[0].name.match(
+		/^\w+\s+(\w+)(?:\s+([-+RFWASXY\d.]+))?(?:\s+(.*))?$/i,
 	);
 	console.log("feature", type, klass, style, text);
 	klass = klass.toLowerCase();
-	let del = featCount[type](wps, i, klass, text);
-	let colors = getColors(type, _.toLower(klass));
-	let pts = wps.splice(i, del);
+	let colors;
+	if (type === "color") {
+		setColors(type, _.toLower(klass), style, text);
+		localColors[klass] = text;
+	} else {
+		colors = getColors(type, _.toLower(klass));
+	}
 	pts = pts.map((pt) => _.pick(pt, ["x", "y", "name"]));
-	// pts = pts.map((pt) => getXY(pt))
-	let extraData = /^point|name|text/i.test(type)
-		? getTextData(pts[0], wps[i])
+	let extraData = /^point|circle|name|text/i.test(type)
+		? getTextData(...pts)
 		: {};
+	let feature2;
 	if (/^rect/i.test(type)) {
+		feature2 = extractRectText(type, klass, pts, colors, text, style);
 		pts = getRectPts(...pts);
 		type = "area";
+		text = undefined;
 	}
 	// let path = getPath(type, wps, m);
 	let feature = { type, klass, pts, ...colors, text, style, ...extraData };
-	let feature2;
-	let extLine = extractLineFromArea(pts);
-	if (extLine) {
-		feature2 = { type: "line", pts: extLine, stroke: colors.stroke };
-		feature.stroke = undefined;
-	}
+	// let extLine = extractLineFromArea(pts);
+	// if (extLine) {
+	// 	feature2 = { type: "line", pts: extLine, stroke: colors.stroke };
+	// 	feature.stroke = undefined;
+	// }
 	features.push(feature);
+
 	if (feature2) features.push(feature2);
-	return [pts, wps];
+	return;
 };
 const getXY = (pt) => {
 	let { x, y } = deLetterMapCoords(pt.pos);
 	return { x, y, name: pt.name };
 };
-const extractLineFromArea = (pts) => {
-	let i = _.findIndex(pts, (p) => /WP.*!$/i.test(p.name));
-	if (i < 0) return null;
-	let start = _.slice(pts, 0, i);
-	let j = _.findIndex(pts, (p) => !/WP.*!$/i.test(p.name), i + 1);
-	let end = j >= 0 ? _.slice(pts, j) : [];
-	return [...end, ...start];
-};
+// const extractLineFromArea = (pts) => {
+// 	let i = _.findIndex(pts, (p) => /WP.*!$/i.test(p.name));
+// 	if (i < 0) return null;
+// 	let start = _.slice(pts, 0, i);
+// 	let j = _.findIndex(pts, (p) => !/WP.*!$/i.test(p.name), i + 1);
+// 	let end = j >= 0 ? _.slice(pts, j) : [];
+// 	return [...end, ...start];
+// };
 const getRectPts = ({ x, y }, { x: x2, y: y2 }) => {
 	return [
 		{ x, y },
@@ -144,32 +153,56 @@ const getTextData = ({ x: x1, y: y1 }, { x: x2, y: y2 }) => {
 	let angle = (rad * 180) / Math.PI;
 	return { len, angle, x2, y2 };
 };
-const strokeColor = {
-	aroad: [255, 0, 0],
-	broad: [164, 42, 42],
-	hill: [206, 132, 64],
-	place: [75, 0, 130],
-	town: [218, 165, 32],
-	// town: [75, 0, 130],
-	water: [178, 202, 246],
-};
-const fillColor = {};
+const extractRectText = (type, klass, pts, colors, text, style) => {
+	if (!text) return null;
+	let fs = getStyleF(style, 8);
+	let pad = getStyleP(style, 0.5 * fs);
+	let [{ x: x1, y: y1 }, { x: x2, y: y2 }] = pts;
 
+	let len = x2 - x1;
+
+	return {
+		type: "textR",
+		klass,
+		pts: [...pts],
+		...colors,
+		text,
+		style,
+		len,
+		angle: 1,
+	};
+};
+const baseColor = {
+	aroad: { stroke: [255, 0, 0] },
+	broad: { stroke: [164, 42, 42] },
+	hill: { stroke: [206, 132, 64] },
+	place: { stroke: [75, 0, 130] },
+	town: { stroke: [218, 165, 32] },
+	// town:{stroke: [75, 0, 130]},
+	water: { stroke: [178, 202, 246] },
+};
+const calcFill = (clr) => {
+	clr.fill = clr.stroke?.map((c) => c + (255 - c) * 0.5);
+};
+for (const prop in baseColor) {
+	calcFill(baseColor[prop]);
+}
+
+const setColors = (type, klass, defStyle, text) => {
+	let [stroke, fill] = text.toLowerCase().split(/ +/);
+	stroke = named2rgb(stroke) || hex2rgb(stroke) || [0, 0, 0];
+
+	fill = fill ? named2rgb(fill) || hex2rgb(fill) : calcFill(stroke);
+	baseColor[klass] = { stroke, fill, defStyle };
+};
 function getColors(type, mode) {
 	if (/color/i.test(type)) return {};
-	let fill = null;
-	let stroke = named2rgb(localColors[mode]) ||
-		hex2rgb(mode) ||
-		strokeColor[mode] ||
-		named2rgb(mode) || [0, 0, 0];
-	if (/^(area|fill|rect)$/i.test(type)) {
-		fill = fillColor[mode];
-		if (!fill) {
-			fill = stroke.map((c) => c + (255 - c) * 0.5);
-		}
-		if (type === "fill") stroke = undefined;
-	}
-	return { stroke, fill };
+	let { stroke, fill, defStyle } = baseColor[mode];
+	// if (/^(area|fill|rect)$/i.test(type)) {
+	if (type === "fill") stroke = undefined;
+	if (type === "line") fill = undefined;
+	// }else fill=undefined;
+	return { stroke, fill, defStyle };
 }
 function named2rgb(name) {
 	let hex = namedColors[name];
