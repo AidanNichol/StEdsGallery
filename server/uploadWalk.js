@@ -123,9 +123,12 @@ async function updateWalkWithRemoteData(walkNo, body, log) {
 		log.info(`creating ${walkNo} ${JSON.stringify(walk)}`);
 		await db.walk.create(walk);
 	}
+	const diff = objectDiffernce(walk, currData);
+	diff.routes = {};
 	for (const route of routes) {
 		const no = route.no;
-		if (currData.routes.find((r) => r.no === no)) {
+		const currRoute = currData.routes.find((r) => r.no === no);
+		if (currRoutes) {
 			console.log(`updating route ${walkNo}/${no} ${JSON.stringify(route)}`);
 			log.info(`updating route ${walkNo}/${no} ${JSON.stringify(route)}`);
 			await db.route.update(route, { where: { date: walkNo, no: route.no } });
@@ -134,8 +137,14 @@ async function updateWalkWithRemoteData(walkNo, body, log) {
 			log.info(`creating route ${walkNo}/${no} ${JSON.stringify(route)}`);
 			await db.route.create(route);
 		}
+		const routeDiff = objectDiffernce(route, currRoute);
+		diff.routes[no] = routeDiff;
 	}
-	return { result: "ok" };
+	return { result: "ok", diff };
 }
-
+function objectDiffernce(newObj, currObj) {
+	return Object.fromEntries(
+		Object.entries(newObj).filter(([key, value]) => currObj?.[key] !== value),
+	);
+}
 module.exports = { uploadWalk, updateWalkWithRemoteData };
