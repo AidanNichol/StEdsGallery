@@ -128,7 +128,7 @@ async function updateWalkWithRemoteData(walkNo, body, log) {
 	for (const route of routes) {
 		const no = route.no;
 		const currRoute = currData.routes.find((r) => r.no === no);
-		if (currRoutes) {
+		if (currRoute) {
 			console.log(`updating route ${walkNo}/${no} ${JSON.stringify(route)}`);
 			log.info(`updating route ${walkNo}/${no} ${JSON.stringify(route)}`);
 			await db.route.update(route, { where: { date: walkNo, no: route.no } });

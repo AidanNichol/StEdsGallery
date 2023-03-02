@@ -233,9 +233,10 @@ async function walkRoutes(fastify) {
 	});
 	fastify.post("/updateWalkWithRemoteData/:walkNo", async (request) => {
 		const { walkNo } = request.params;
+		console.log("body=====>", request.body);
 		const body = JSON.parse(request.body);
-		await updateWalkWithRemoteData(walkNo, body, fastify.log);
-		return { res: "ok" };
+		const res = await updateWalkWithRemoteData(walkNo, body, fastify.log);
+		return res;
 	});
 
 	fastify.get("/getRoutesGpxJ/:dat", async (request) => {
