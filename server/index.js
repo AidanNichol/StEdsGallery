@@ -2,10 +2,10 @@
 const dotenv = require("dotenv");
 dotenv.config();
 const fastifyPkg = require("fastify");
-const fastifyCors = require("fastify-cors");
-const fastifyCookie = require("fastify-cookie");
-const fastifyStatic = require("fastify-static");
-const multipart = require("fastify-multipart");
+const fastifyCors = require("@fastify/cors");
+const fastifyCookie = require("@fastify/cookie");
+const fastifyStatic = require("@fastify/static");
+const multipart = require("@fastify/multipart");
 const { stdTimeFunctions } = require("pino");
 
 // const path = require("path");
@@ -49,13 +49,18 @@ const serverFactory = (handler) => {
 jetpack.dir("../logs");
 const fastify = fastifyPkg({
 	serverFactory,
-	// logger: {
-	//   level: "info",
-	//   file: "../logs/stEdsGallery.log", // will use pino.destination()
-	//   timestamp: stdTimeFunctions.isoTime,
-	// },
+	logger: {
+		level: "info",
+		file: "../logs/stEdsGallery.log", // will use pino.destination()
+		timestamp: stdTimeFunctions.isoTime,
+	},
 });
-
+// fastify.addHook('onRequest', (request, reply, done) => {
+//   let msg=`method: ${request.method}, url: ${request.url}`;
+// 	console.log(msg);
+// 	fastify.log.info(msg)
+//   done()
+// })
 fastify.register(fastifyCookie, {
 	secret: getenv("COOKIE_SECRET"), // for cookies signature
 	parseOptions: {}, // options for parsing cookies
@@ -109,7 +114,7 @@ fastify.register(authRoutes, { prefix: `${sitePrefix}auth` });
 // Run the server!
 const runit = async () => {
 	try {
-		await fastify.listen(5555);
+		await fastify.listen({port:5555});
 	} catch (err) {
 		fastify.log.error(err);
 		process.exit(1);
@@ -119,5 +124,8 @@ const runit = async () => {
 		`Server (v${version}) listening on ${fastify.server.address().port}`,
 	);
 };
-runit();
+const node_env = getenv("NODE_ENV", "developement");
+console.error("node_env", node_env, version);
+console.warn("node_warn", new Date(), node_env, node_env, version);
+if (node_env !== "production") runit();
 module.exports = fastify;

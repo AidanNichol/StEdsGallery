@@ -1,6 +1,5 @@
 const ftp = require("basic-ftp");
 const getenv = require("getenv");
-const logUpdate = require("log-update");
 const jetpack = require("fs-jetpack");
 const _ = require("lodash");
 const db = require("./walkDB");

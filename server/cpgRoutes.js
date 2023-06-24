@@ -18,16 +18,38 @@ const { format, parseISO } = dateFn;
 const isDev = (dev = true) => dev;
 const galleryDataPath = process.env.GALLERY_DATA;
 
+async function mapBodyValues(req){
+  let body = (await req.body)??{};
+
+  Object.keys(body).forEach(k=>body[k]=body[k].value)
+  return body;
+}
+
 async function cpgRoutes(fastify, options) {
+  const logMe=function(){
+    let result = ""; // initialize list
+    // iterate through arguments
+    for (let i = 0; i < arguments.length; i++) {
+      let a=arguments[i]
+      result += `${ typeof a==='object'?JSON.stringify(a):String(a)} `;
+    }
+    fastify.log.info(result)
+    return result;
+  }
+  logMe('test', 2002, {a:1, b:2})
+  sequelize.options.logging =logMe;
   fastify.get("/", async (request, reply) => {
-    return { hello: "world" };
+    return { hello: "world", post:false };
+  });
+  fastify.post("/", async (request, reply) => {
+    return { hello: "world", post:true };
   });
 
   fastify.get("/getTables", async (request) => {
     const [results, metadata] = await db.sequelize.query(
       "SELECT name FROM sqlite_master WHERE type ='table' AND name NOT LIKE 'sqlite_%';"
     );
-    console.log("getPictures ", results, metadata);
+    logMe("getPictures ", results, metadata);
 
     return results;
   });
@@ -35,7 +57,7 @@ async function cpgRoutes(fastify, options) {
     // const [results, metadata] = await db.sequelize.query(
     //   "SELECT name FROM sqlite_master WHERE type ='table' AND name NOT LIKE 'sqlite_%';"
     // );
-    // console.log("getPictures ", results, metadata);
+    // logMe("getPictures ", results, metadata);
     const pictures = await db.picture.findAll({
       order: [["aid", "DESC"]],
       where: { hidden: 0 },
@@ -49,7 +71,7 @@ async function cpgRoutes(fastify, options) {
         attributes: ["title", "directory", "hidden"],
       },
     });
-    // console.log("getPictures pictures", pictures);
+    // logMe("getPictures pictures", pictures);
     return pictures;
   });
 
@@ -102,7 +124,7 @@ async function cpgRoutes(fastify, options) {
       group: "album.aid",
       order: [["title", "DESC"]],
     });
-    console.log("aggregations", aggregations);
+    logMe("aggregations", aggregations);
     return aggregations;
   });
 
@@ -136,7 +158,7 @@ async function cpgRoutes(fastify, options) {
   });
   fastify.get("/testRole", async (req) => {
     const authSeq = req.cookies.authSeq;
-    console.log("authSeq", req.cookies);
+    logMe("authSeq", req.cookies);
     if (!isOkForRole(req, "uploader")) {
       throw Error("not authorized for uploading");
     }
@@ -144,20 +166,41 @@ async function cpgRoutes(fastify, options) {
   });
 
   fastify.post("/renameAlbum", async (req) => {
-    const { aid, title } = await req.body;
-    console.log({ aid, title });
+    const body = await mapBodyValues(req);
+
+    const { aid, title } = body;
+    logMe({ aid, title });
     const count = await db.album.update({ title }, { where: { aid } });
     return { count };
   });
   fastify.post("/hideAlbum", async (req) => {
-    const { aid, hidden } = await req.body;
-    console.log("Hidding", aid, hidden);
+    const body = await mapBodyValues(req);
+
+    const { aid, hidden } = body;
+    logMe("Hidding", aid, hidden);
     const count = await db.album.update({ hidden }, { where: { aid } });
     return { count };
   });
 
-  fastify.post("/changePhotographer", async (req) => {
-    const { ids, photographer } = await req.body;
+  fastify.post("/changePhotographer", async (req, reply) => {
+
+    const body = await mapBodyValues(req);
+    const {ids, photographer}=body;
+    if (!ids ||!photographer){
+      reply.code(208).send({count:-1,msg:"no ids or photographer specified"})
+      return ;}
+    const count = await db.picture.update(
+      { photographer },
+      { where: { pid: ids } }
+    );
+    return { count };
+  });
+  fastify.post("/changePhotographer2", async (req, reply) => {
+
+    const {ids, photographer}=(await req.body)??{};
+    if (!ids ||!photographer){
+      reply.code(208).send({count:-1,msg:"no ids or photographer specified"})
+      return ;}
     const count = await db.picture.update(
       { photographer },
       { where: { pid: ids } }
@@ -165,12 +208,14 @@ async function cpgRoutes(fastify, options) {
     return { count };
   });
   fastify.post("/changeCaption", async (req) => {
-    const { ids, caption } = await req.body;
+    const body = await mapBodyValues(req);
+    const { ids, caption } = body;
     const count = await db.picture.update({ caption }, { where: { pid: ids } });
     return { count };
   });
   fastify.post("/changeHidden", async (req) => {
-    const { ids, hidden } = await req.body;
+    const body = await mapBodyValues(req);
+    const { ids, hidden } = body;
     const count = await db.picture.update(
       { hidden: hidden ? 1 : 0 },
       { where: { pid: ids } }
@@ -178,39 +223,39 @@ async function cpgRoutes(fastify, options) {
     return { count };
   });
   fastify.post("/deleteAlbum", async (req) => {
-    const { aid } = await req.body;
+    const body = await mapBodyValues(req);
+    const { aid } = body;
     const album = await db.album.findByPk(aid);
 
     const folder = `${galleryDataPath}/${album.directory}`;
     const pics = jetpack.cwd(folder); // new jetpack context
     const pictures = await db.picture.findAll({ where: { aid } });
     const filter = pictures.map((p) => p.filename.replace(".", "*."));
-    console.log(folder, { filter });
+    logMe(folder, { filter });
     const files = pics.find(".", { matching: filter });
-    console.log({ files });
+    logMe({ files });
     files.forEach(pics.remove);
     const count = await db.album.destroy({ where: { aid } });
     return { count };
   });
   fastify.post("/deletePictures", async (req) => {
-    const { ids, aid } = await req.body;
+    const body = await mapBodyValues(req);
+    const { ids, aid } = body;
     const album = await db.album.findByPk(aid);
 
     const folder = `${galleryDataPath}/${album.directory}`;
     const pics = jetpack.cwd(folder); // new jetpack context
     const pictures = await db.picture.findAll({ where: { pid: ids } });
     const filter = pictures.map((p) => p.filename.replace(".", "*."));
-    console.log(folder, { filter });
+    logMe(folder, { filter });
     const files = pics.find(".", { matching: filter });
-    console.log({ files });
+    logMe({ files });
     files.forEach(pics.remove);
     const count = await db.picture.destroy({ where: { pid: ids } });
     return { count };
   });
   fastify.post("/upload", async (req, reply) => {
     try {
-      const authSeq = req.cookies.authSeq;
-      console.log("authSeq", req.cookies);
       if (!isOkForRole(req, "uploader")) {
         throw Error("not authorized for uploading");
       }
@@ -240,7 +285,7 @@ async function cpgRoutes(fastify, options) {
         });
       }
 
-      console.log(album);
+      logMe(album);
 
       const { pid } = await db.picture.create({
         aid: album.aid,
@@ -251,7 +296,7 @@ async function cpgRoutes(fastify, options) {
 
       let [, file, ext] = filename.match(/^(.+)\.(.*?)$/);
       let newF = `pic${pid}.${ext}`;
-      console.log(pid, temp, newF, directory);
+      logMe(pid, temp, newF, directory);
       let { srcset, width, height } = await add_picture(
         fastify.log,
         temp,
@@ -272,7 +317,7 @@ async function cpgRoutes(fastify, options) {
         .header("Content-Type", "text/plain; charset=utf-8")
         .send(`${album.aid}.${pid}`);
     } catch (error) {
-      console.log(error);
+      logMe(error);
       throw new Error(error);
     }
   });

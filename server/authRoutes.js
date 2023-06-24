@@ -38,8 +38,10 @@ const auth_default = {
 exports.isOkForRole = function isOkForRole(request, role, alwaysReturn) {
   // return true;
   // if (getenv.bool("DEVELOPMENT")) return true;
-  const { roles = [], authseq } = current.get(request.headers["auth-token"]);
-  const authSeqMatch = request.headers.authseq === authseq;
+  const authToken=request.headers["auth-token"]??request.body.authToken;
+  const authSeq=request.headers.authseq??request.body.authseq;
+  const { roles = [], authseq } = current.get(authToken);
+  const authSeqMatch = authSeq === authseq;
   const hasRole = roles.includes(role) || roles.includes("admin");
   const OK = authSeqMatch && hasRole;
   console.log(request.headers.authseq, authseq, roles, OK);
