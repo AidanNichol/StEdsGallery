@@ -30,11 +30,11 @@ console.log("downloadsdata", downloadsDataPath);
 const sitePrefix = getenv("SITE_PREFIX", "apiServer/");
 console.log("sitePrefix", sitePrefix);
 console.log("cwd", jetpack.cwd());
+let server;
 const serverFactory = (handler) => {
-	const server = http.createServer((req, res) => {
+	 server = http.createServer((req, res) => {
 		handler(req, res);
 	});
-
 	return server;
 };
 
@@ -127,5 +127,12 @@ const runit = async () => {
 const node_env = getenv("NODE_ENV", "developement");
 console.error("node_env", node_env, version);
 console.warn("node_warn", new Date(), node_env, node_env, version);
-if (node_env !== "production") runit();
+fastify.ready(() => {
+	if (node_env === "production")  server.listen()
+  else server.listen({ port: 5555 })
+	console.log(fastify.printRoutes({ commonPrefix: false }));
+	console.log(
+		`Server (v${version}) listening on  ${JSON.stringify(fastify.server.address())} ${fastify.server.address().port}`,
+	);
+})
 module.exports = fastify;

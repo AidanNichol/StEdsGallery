@@ -13,3 +13,8 @@ deployLastData.json
 server/downloads/StEdsNewMemberInfo-2022-Sept.pdf
 server/env
 server/depricated.json
+server/indexExpress.js
+server/temp
+.gitignore
+server/indexRaw.js
+server/index2.js
