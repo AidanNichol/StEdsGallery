@@ -11,19 +11,13 @@ const { isOkForRole } = require("./authRoutes.js");
 
 const dateFn = require("date-fns");
 const jetpack = require("fs-jetpack");
+
 const { read, exists, write, cwd } = jetpack;
 const { format, parseISO } = dateFn;
 // const { Op } = sequelize;
 
 const isDev = (dev = true) => dev;
 const galleryDataPath = process.env.GALLERY_DATA;
-
-async function mapBodyValues(req) {
-  let body = (await req.body) ?? {};
-
-  Object.keys(body).forEach((k) => (body[k] = body[k].value));
-  return body;
-}
 
 async function cpgRoutes(fastify, options) {
   const logMe = function () {
@@ -166,7 +160,7 @@ async function cpgRoutes(fastify, options) {
   });
 
   fastify.post("/renameAlbum", async (req) => {
-    const body = await mapBodyValues(req);
+    const body = await req.body;
 
     const { aid, title } = body;
     logMe({ aid, title });
@@ -174,7 +168,7 @@ async function cpgRoutes(fastify, options) {
     return { count };
   });
   fastify.post("/hideAlbum", async (req) => {
-    const body = await mapBodyValues(req);
+    const body = await req.body;
 
     const { aid, hidden } = body;
     logMe("Hidding", aid, hidden);
@@ -183,7 +177,7 @@ async function cpgRoutes(fastify, options) {
   });
 
   fastify.post("/changePhotographer", async (req, reply) => {
-    const body = await mapBodyValues(req);
+    const body = await req.body;
     const { ids, photographer } = body;
     if (!ids || !photographer) {
       reply
@@ -212,13 +206,13 @@ async function cpgRoutes(fastify, options) {
     return { count };
   });
   fastify.post("/changeCaption", async (req) => {
-    const body = await mapBodyValues(req);
+    const body = await req.body;
     const { ids, caption } = body;
     const count = await db.picture.update({ caption }, { where: { pid: ids } });
     return { count };
   });
   fastify.post("/changeHidden", async (req) => {
-    const body = await mapBodyValues(req);
+    const body = await req.body;
     const { ids, hidden } = body;
     const count = await db.picture.update(
       { hidden: hidden ? 1 : 0 },
@@ -227,7 +221,7 @@ async function cpgRoutes(fastify, options) {
     return { count };
   });
   fastify.post("/deleteAlbum", async (req) => {
-    const body = await mapBodyValues(req);
+    const body = await req.body;
     const { aid } = body;
     const album = await db.album.findByPk(aid);
 
@@ -243,7 +237,7 @@ async function cpgRoutes(fastify, options) {
     return { count };
   });
   fastify.post("/deletePictures", async (req) => {
-    const body = await mapBodyValues(req);
+    const body = await req.body;
     const { ids, aid } = body;
     const album = await db.album.findByPk(aid);
 
@@ -260,10 +254,99 @@ async function cpgRoutes(fastify, options) {
   });
   fastify.get("/processUpload", async (req, reply) => {
     const { filename, albumTitle, photographer, tempFile } = req.query;
+    console.warn("from query", {
+      filename,
+      albumTitle,
+      photographer,
+      tempFile,
+    });
     if (!isOkForRole(req, "uploader")) {
       throw Error("not authorized for uploading");
     }
     return processUpload(filename, albumTitle, photographer, tempFile);
+  });
+  fastify.post("/processUpload", async (req, reply) => {
+    const body = await req.body;
+    const { filename, albumTitle, photographer, tempFile } = body;
+    console.warn("from body", {
+      filename,
+      albumTitle,
+      photographer,
+      tempFile,
+    });
+    if (!isOkForRole(req, "uploader")) {
+      throw Error("not authorized for uploading");
+    }
+    return processUpload(filename, albumTitle, photographer, tempFile);
+  });
+
+  fastify.post("/uploadJson", async (req, reply) => {
+    try {
+      if (!isOkForRole(req, "uploader")) {
+        throw Error("not authorized for uploading");
+      }
+
+      const body = await req.body;
+      const { albumTitle, photographer, photo, filename } = body;
+
+      const badDate =
+        parseISO(albumTitle.substr(0, 10)).toString() === "Invalid Date";
+      if (badDate) {
+        throw Error("Invalid Album Title - must start with a valid date.");
+      }
+
+      const temp = `temp/_${filename}`;
+      fs.writeFileSync(temp, photo, "base64");
+
+      const year = albumTitle.substr(0, 4);
+      const directory = `${year}/${albumTitle.substr(0, 10)}`;
+
+      let album = await db.album.findOne({
+        where: { title: albumTitle },
+      });
+      if (!album) {
+        album = await db.album.create({
+          title: albumTitle,
+          year,
+          directory,
+        });
+      }
+
+      logMe(album);
+
+      const { pid } = await db.picture.create({
+        aid: album.aid,
+        origFilename: filename,
+        filename: "",
+        photographer,
+      });
+
+      let [, file, ext] = filename.match(/^(.+)\.(.*?)$/);
+      let newF = `pic${pid}.${ext}`;
+      logMe(pid, temp, newF, directory);
+      let { srcset, width, height } = await add_picture(
+        fastify.log,
+        temp,
+        newF,
+        directory
+      );
+      const update = await db.picture.update(
+        {
+          filename: newF,
+          width,
+          height,
+          srcset,
+        },
+        { where: { pid: pid } }
+      );
+      reply
+        .code(200)
+        .header("Content-Type", "text/plain; charset=utf-8")
+        .send(`${album.aid}.${pid}`);
+    } catch (error) {
+      logMe(error);
+      throw new Error(error);
+    }
   });
   fastify.post("/upload", async (req, reply) => {
     try {
