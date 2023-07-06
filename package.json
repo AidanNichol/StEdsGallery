@@ -21,6 +21,7 @@
     "moveFiles": "clear&&node prisma/moveFiles.mjs --trace-warnings ",
     "generate": "npx prisma generate",
     "server": "clear&&pnpm nodemon -r dotenv/config ./server/index.js",
+    "phpServer": "php -S 127.0.0.1:8000",
     "setPrerelease": " pnpm version prerelease -f ",
     "deploy": "clear&& pnpm version patch && node -r dotenv/config ./deploy.mjs",
     "uploadGalleryDB": "clear&& node -r dotenv/config ./uploadGalleryDB.mjs",
