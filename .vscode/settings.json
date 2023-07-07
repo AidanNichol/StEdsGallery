@@ -18,5 +18,17 @@
     "titleBar.inactiveBackground": "#152b9599",
     "titleBar.inactiveForeground": "#e7e7e799"
   },
-  "peacock.color": "#152b95"
+  "peacock.color": "#152b95",
+  "cSpell.words": [
+    "fastify",
+    "getenv",
+    "jspdf",
+    "mailgun",
+    "ospoint",
+    "pino",
+    "prerelease",
+    "Prerelease",
+    "steds",
+    "textmagic"
+  ]
 }
