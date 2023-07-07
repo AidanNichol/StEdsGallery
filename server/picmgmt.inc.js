@@ -5,8 +5,8 @@ async function add_picture(log, temp, filename, directory) {
   let galleryDir = `${process.env.GALLERY_DATA}/${directory}`;
   let baseImage = `${galleryDir}/${filename}`;
   jetpack.dir(`gallery/${directory}`);
-  if (jetpack.exists(temp) !== "file")
-    console.log("ugh!", temp, jetpack.exists(temp));
+  if (jetpack.exists(temp) !== "file") log("ugh!", temp, jetpack.exists(temp));
+  log({ galleryDir, baseImage, temp });
   let image;
   try {
     image = await Jimp.read(temp);
@@ -23,9 +23,9 @@ async function add_picture(log, temp, filename, directory) {
       } else {
         await image.clone().writeAsync(baseImage);
       }
-      console.log("newSize", { width, height, ratio });
+      log("newSize", { width, height, ratio });
     }
-    log.info(`created ${baseImage}`);
+    log(`created ${baseImage}`);
     let srcset = ``;
 
     let [, file, ext] = filename.toLowerCase().match(/^(.+)\.(.*?)$/);
@@ -42,17 +42,17 @@ async function add_picture(log, temp, filename, directory) {
           .resize(sz, sz === 70 ? 70 : Jimp.AUTO)
           .writeAsync(newF);
 
-        log.info(`created ${newF}`);
+        log(`created ${newF}`);
       }
       console.log("created", newF);
       srcset = `${srcset}${directory}/${picName} ${sz}w, `;
     }
     jetpack.remove(temp);
-    log.info(`removed ${temp}`);
+    log(`removed ${temp}`);
     srcset = `${srcset}${directory}/${filename} ${width}w`;
     return { srcset, width, height };
   } catch (error) {
-    console.log(error);
+    log(error);
   }
 }
 module.exports = { add_picture };

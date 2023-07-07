@@ -23,6 +23,7 @@ async function cpgRoutes(fastify, options) {
   const logMe = function () {
     let result = ""; // initialize list
     // iterate through arguments
+    console.warn("logme", ...arguments);
     for (let i = 0; i < arguments.length; i++) {
       let a = arguments[i];
       result += `${typeof a === "object" ? JSON.stringify(a) : String(a)} `;
@@ -254,7 +255,7 @@ async function cpgRoutes(fastify, options) {
   });
   fastify.get("/processUpload", async (req, reply) => {
     const { filename, albumTitle, photographer, tempFile } = req.query;
-    console.warn("from query", {
+    console.warn("from query", new Date(), {
       filename,
       albumTitle,
       photographer,
@@ -266,9 +267,10 @@ async function cpgRoutes(fastify, options) {
     return processUpload(filename, albumTitle, photographer, tempFile);
   });
   fastify.post("/processUpload", async (req, reply) => {
+    logMe("processUpload", req.headers);
     const body = await req.body;
     const { filename, albumTitle, photographer, tempFile } = body;
-    console.warn("from body", {
+    console.warn("from body", new Date(), {
       filename,
       albumTitle,
       photographer,
@@ -290,7 +292,7 @@ async function cpgRoutes(fastify, options) {
 
       const year = albumTitle.substr(0, 4);
       const directory = `${year}/${albumTitle.substr(0, 10)}`;
-
+      console.warn({ year, directory });
       let album = await db.album.findOne({
         where: { title: albumTitle },
       });
@@ -310,12 +312,13 @@ async function cpgRoutes(fastify, options) {
         filename: "",
         photographer,
       });
-
+      logMe({ pid, filename });
+      logMe(filename.match(/^(.+)\.(.*?)$/));
       let [, file, ext] = filename.match(/^(.+)\.(.*?)$/);
       let newF = `pic${pid}.${ext}`;
       logMe(pid, tempFile, newF, directory);
       let { srcset, width, height } = await add_picture(
-        fastify.log,
+        logMe,
         tempFile,
         newF,
         directory
@@ -329,6 +332,7 @@ async function cpgRoutes(fastify, options) {
         },
         { where: { pid: pid } }
       );
+      logMe("Completed", pid, new Date());
       return { aid: album.aid, pid };
     } catch (error) {
       logMe(error);
