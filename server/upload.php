@@ -11,7 +11,7 @@ $server_name= $_SERVER["SERVER_NAME"];
 if ($server_name == "127.0.0.1" || $server_name  == "localhost"){
     $upload_dir = $_SERVER["DOCUMENT_ROOT"]."/temp/";
 }else{
-     $upload_dir = "/home/ajnichol/apiserver/temp/";
+     $upload_dir = "/home/ajnichol/apiServer/temp/";
 }
 $phpFileUploadErrors = array(
     0 => 'There is no error, the file uploaded with success',
@@ -24,7 +24,6 @@ $phpFileUploadErrors = array(
     8 => 'A PHP extension stopped the file upload.',
 );
 $response=array();
-// foreach ($_FILES["photo"]["error"] as $key => $error) {
     $error = $_FILES["photo"]["error"];
     $message = $phpFileUploadErrors[$error];
     $filename="";
@@ -32,7 +31,6 @@ $response=array();
     if ($error == 0) {
         $tmp_name = $_FILES["photo"]["tmp_name"];
         // basename() may prevent filesystem traversal attacks;
-        // further validation/sanitation of the filename may be appropriate
         $filename=$_FILES["photo"]["name"];
         $filename = basename(strtolower(preg_replace('/\s+/','-',$filename)));
         $tempFile= $upload_dir.$filename;
@@ -41,7 +39,6 @@ $response=array();
     else{
     }
     $response=array("error"=>$error, "message"=>$message, "filename"=>$filename, 'server'=>$_SERVER, "tempFile"=>$tempFile);
-// }
 
 echo json_encode($response);
 ?>
