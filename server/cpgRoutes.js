@@ -160,16 +160,14 @@ async function cpgRoutes(fastify, options) {
     return "OK";
   });
 
-  fastify.post("/renameAlbum", async (req) => {
-    const body = await req.body;
-
-    const { aid, title } = body;
+  fastify.get("/renameAlbum", async (req) => {
+    const { aid, title } = await req.query;
     logMe({ aid, title });
     const count = await db.album.update({ title }, { where: { aid } });
     return { count };
   });
-  fastify.post("/hideAlbum", async (req) => {
-    const body = await req.body;
+  fastify.get("/hideAlbum", async (req) => {
+    const body = await req.query;
 
     const { aid, hidden } = body;
     logMe("Hidding", aid, hidden);
@@ -177,8 +175,8 @@ async function cpgRoutes(fastify, options) {
     return { count };
   });
 
-  fastify.post("/changePhotographer", async (req, reply) => {
-    const body = await req.body;
+  fastify.get("/changePhotographer", async (req, reply) => {
+    const body = await req.query;
     const { ids, photographer } = body;
     if (!ids || !photographer) {
       reply
@@ -192,8 +190,8 @@ async function cpgRoutes(fastify, options) {
     );
     return { count };
   });
-  fastify.post("/changePhotographer2", async (req, reply) => {
-    const { ids, photographer } = (await req.body) ?? {};
+  fastify.get("/changePhotographer2", async (req, reply) => {
+    const { ids, photographer } = (await req.query) ?? {};
     if (!ids || !photographer) {
       reply
         .code(208)
@@ -206,14 +204,14 @@ async function cpgRoutes(fastify, options) {
     );
     return { count };
   });
-  fastify.post("/changeCaption", async (req) => {
-    const body = await req.body;
+  fastify.get("/changeCaption", async (req) => {
+    const body = await req.query;
     const { ids, caption } = body;
     const count = await db.picture.update({ caption }, { where: { pid: ids } });
     return { count };
   });
-  fastify.post("/changeHidden", async (req) => {
-    const body = await req.body;
+  fastify.get("/changeHidden", async (req) => {
+    const body = await req.query;
     const { ids, hidden } = body;
     const count = await db.picture.update(
       { hidden: hidden ? 1 : 0 },
@@ -221,8 +219,8 @@ async function cpgRoutes(fastify, options) {
     );
     return { count };
   });
-  fastify.post("/deleteAlbum", async (req) => {
-    const body = await req.body;
+  fastify.get("/deleteAlbum", async (req) => {
+    const body = await req.query;
     const { aid } = body;
     const album = await db.album.findByPk(aid);
 
@@ -237,8 +235,8 @@ async function cpgRoutes(fastify, options) {
     const count = await db.album.destroy({ where: { aid } });
     return { count };
   });
-  fastify.post("/deletePictures", async (req) => {
-    const body = await req.body;
+  fastify.get("/deletePictures", async (req) => {
+    const body = await req.query;
     const { ids, aid } = body;
     const album = await db.album.findByPk(aid);
 
