@@ -295,7 +295,7 @@ async function cpgRoutes(fastify, options) {
         where: { title: albumTitle },
       });
       if (!album) {
-        album = await db.album.create({
+        [album, created] = await db.album.upsert({
           title: albumTitle,
           year,
           directory,
