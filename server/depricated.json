@@ -1,0 +1,8 @@
+[
+  "/apiServer/walks/getLatestYears",
+  "/apiServer/walks/getWalkDetails/:dat",
+  "/apiServer/walks/getYearsData/:year",
+  "/apiServer/walks/getRoutesGpxJ/:dat",
+  "/apiServer/walks/getWalksByRegionIndex",
+  "/apiServer/walks/getMapData/:dat"
+]
